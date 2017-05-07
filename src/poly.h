@@ -1,16 +1,17 @@
 /** @file
    Interfejs klasy wielomianów
 
-   @author Jakub Pawlewicz <pan@mimuw.edu.pl>, TODO
+   @author Jakub Pawlewicz <pan@mimuw.edu.pl>, Michał Balcerzak <mb385130@mimuw.edu.pl>
    @copyright Uniwersytet Warszawski
    @date 2017-04-24, TODO
-*/
+ */
 
 #ifndef __POLY_H__
 #define __POLY_H__
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 /** Typ współczynników wielomianu */
 typedef long poly_coeff_t;
@@ -18,26 +19,36 @@ typedef long poly_coeff_t;
 /** Typ wykładników wielomianu */
 typedef int poly_exp_t;
 
+/** Typ rozmoaru wielomianów */
+typedef int poly_size_t;
+
+
+typedef struct Mono Mono;
+
 /**
  * Struktura przechowująca wielomian
  * TODO
  */
 typedef struct Poly
 {
-    /* TODO */
+    Mono* first; ///< jednomian o największym wykładniku
+    Mono* last; ///< jednomian o największym wykładniku
+    poly_coeff_t abs_term; ///< wartość wyrazu wolnego
+    poly_size_t size; ///< rozmiar wielomianu
 } Poly;
 
 /**
-  * Struktura przechowująca jednomian
-  * Jednomian ma postać `p * x^e`.
-  * Współczynnik `p` może też być wielomianem.
-  * Będzie on traktowany jako wielomian nad kolejną zmienną (nie nad x).
-  */
+ * Struktura przechowująca jednomian
+ * Jednomian ma postać `p * x^e`.
+ * Współczynnik `p` może też być wielomianem.
+ * Będzie on traktowany jako wielomian nad kolejną zmienną (nie nad x).
+ */
 typedef struct Mono
 {
     Poly p; ///< współczynnik
     poly_exp_t exp; ///< wykładnik
-    /* TODO */
+    Mono* prev; ///< jednomian o większym wykładniku
+    Mono* next; ///< jednomian o mniejszym wykładniku
 } Mono;
 
 /**
@@ -47,7 +58,7 @@ typedef struct Mono
  */
 static inline Poly PolyFromCoeff(poly_coeff_t c)
 {
-    /* TODO */
+    return (Poly) {.first = NULL, .last = NULL, .abs_term = c};
 }
 
 /**
@@ -56,7 +67,7 @@ static inline Poly PolyFromCoeff(poly_coeff_t c)
  */
 static inline Poly PolyZero()
 {
-    /* TODO */
+    return PolyFromCoeff(0);
 }
 
 /**
@@ -68,7 +79,7 @@ static inline Poly PolyZero()
  */
 static inline Mono MonoFromPoly(const Poly *p, poly_exp_t e)
 {
-    return (Mono) {.p = *p, .exp = e};
+    return (Mono) {.p = *p, .exp = e, .prev = NULL, .next = NULL};
 }
 
 /**
@@ -78,7 +89,7 @@ static inline Mono MonoFromPoly(const Poly *p, poly_exp_t e)
  */
 static inline bool PolyIsCoeff(const Poly *p)
 {
-    /* TODO */
+    return (p->first == NULL);
 }
 
 /**
@@ -88,7 +99,7 @@ static inline bool PolyIsCoeff(const Poly *p)
  */
 static inline bool PolyIsZero(const Poly *p)
 {
-    /* TODO */
+    return (PolyIsCoeff (p) && p->abs_term == 0);
 }
 
 /**
@@ -103,7 +114,8 @@ void PolyDestroy(Poly *p);
  */
 static inline void MonoDestroy(Mono *m)
 {
-    /* TODO */
+    PolyDestroy (&(m->p));
+    free (m);
 }
 
 /**
@@ -120,7 +132,7 @@ Poly PolyClone(const Poly *p);
  */
 static inline Mono MonoClone(const Mono *m)
 {
-    /* TODO */
+    return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp};
 }
 
 /**
