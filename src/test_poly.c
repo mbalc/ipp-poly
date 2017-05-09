@@ -1,5 +1,6 @@
 #include "poly.h"
 #include "const_arr.h"
+#include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -82,6 +83,8 @@ bool OverflowTest();
 
 void MemoryThiefTest();
 
+void MemoryTest();
+
 void PrintHelp(char *);
 
 int main(int argc, char **argv)
@@ -94,6 +97,7 @@ int main(int argc, char **argv)
     if (strcmp(argv[1], MEMORY) == 0)
     {
         MemoryThiefTest();
+        MemoryTest();
     }
     else if (strcmp(argv[1], SIMPLE_ARITHMETIC) == 0)
     {
@@ -193,6 +197,7 @@ int main(int argc, char **argv)
         res += SimpleArithmeticTest();
         res += LongPolynomialTest();
         MemoryThiefTest();
+        MemoryTest();
         res += DegreeOpChangeTest();
         res += DegTest();
         res += SimpleAtTest2();
@@ -363,6 +368,7 @@ bool LongPolynomialTest()
             fprintf(stderr, "[LongPolynomialTest] fail on PolyAt [2]\n");
             res = false;
         }
+        PolyDestroy(&mono_sum_poly);
         PolyDestroy(&mono_sum);
         mono_sum = PolyAt(&long_p, -1);
         if (!PolyIsEq(&mono_sum, &p))
@@ -438,8 +444,8 @@ bool DegreeOpChangeTest()
             p2 = PolyClone(&p_one);
             m[i] = MonoFromPoly(&p2, i);
         }
-        p2 = PolyAddMonos(poly_len, m);
         Mono m2 = MonoClone(&m[poly_len - 1]);
+        p2 = PolyAddMonos(poly_len, m);
         Poly p3 = PolyAddMonos(1, &m2);
         p_res = PolySub(&p2, &p3); // (1 + x + ... + x^n) - x^n
         if (PolyDeg(&p_res) != poly_len - 2)
@@ -461,11 +467,11 @@ bool DegreeOpChangeTest()
         }
         p2 = PolyClone(&p_one);
         m[poly_len - 1] = MonoFromPoly(&p2, poly_len);
-        p2 = PolyAddMonos(poly_len, m);
-
         Mono m2[2];
-        Poly p3;
         m2[0] = MonoClone(&m[poly_len - 1]);
+
+        p2 = PolyAddMonos(poly_len, m);
+        Poly p3;
         p3 = PolyClone(&p_one);
         m2[1] = MonoFromPoly(&p3, poly_len - 1);
 
@@ -481,7 +487,7 @@ bool DegreeOpChangeTest()
         PolyDestroy(&p3);
         PolyDestroy(&p_res);
     }
-
+    PolyDestroy(&p_one);
     return true;
 }
 
@@ -617,6 +623,7 @@ Poly MakePoly(unsigned count, const poly_coeff_t *val, poly_exp_t *exp)
         if (val[i] == 0)
         {
             shift--;
+            PolyDestroy(&p);
         }
         else
         {
@@ -774,7 +781,6 @@ bool MulTest()
         PolyDestroy(&p2);
         PolyDestroy(&p_res1);
         PolyDestroy(&p1);
-        PolyDestroy(&p2);
     }
     {
         poly_coeff_t val1[] = {1, 1};
@@ -851,6 +857,7 @@ Poly BuildRecursivePoly(const poly_coeff_t * coef_arr, const poly_exp_t * exp_ar
         if (PolyIsZero(&res))
         {
             Mono m = MonoFromPoly(&p, exp);
+            PolyDestroy(&res);
             res = PolyAddMonos(1, &m);
         }
         else
@@ -1121,9 +1128,10 @@ bool MulTest2()
 {
     bool good = true;
     size_t step = 10;
-    size_t poly_one_len = 10;
+    size_t poly_one_len = 5;
     size_t poly_two_len;
-    size_t current_conf_size = conf_size / 100 + 1;
+    size_t current_conf_size = 501; // conf_size+1; - dla ambitnych: wzorcowe
+    // rozwiązanie w trybe relase na studentsie wykonuje się w 1m44.373s (real) 
     poly_exp_t *exp_list = calloc(2 * current_conf_size, sizeof(poly_exp_t));
     for (poly_exp_t i = 0; i < (poly_exp_t)current_conf_size * 2; i++)
     {
@@ -1515,33 +1523,38 @@ bool SimpleAddTest()
     return res;
 }
 
+static inline Mono M(Poly p, poly_exp_t e)
+{
+    return MonoFromPoly(&p, e);
+}
+
 bool SimpleAddMonosTest()
 {
     bool res = true;
     {
-        Mono m[] = { { C(-1), 0 }, { C(1), 0 } };
+        Mono m[] = { M(C(-1), 0), M(C(1), 0) };
         res &= TestAddMonos(2, m, C(0));
     }
     {
-        Mono m[] = { { C(-1), 1 }, { C(1), 1 } };
+        Mono m[] = { M(C(-1), 1), M(C(1), 1) };
         res &= TestAddMonos(2, m, C(0));
     }
     {
-        Mono m[] = { { C(1), 0 }, { C(1), 0 } };
+        Mono m[] = { M(C(1), 0), M(C(1), 0) };
         res &= TestAddMonos(2, m, C(2));
     }
     {
-        Mono m[] = { { C(1), 1 }, { C(1), 1 } };
+        Mono m[] = { M(C(1), 1), M(C(1), 1) };
         res &= TestAddMonos(2, m, P(C(2), 1));
     }
     {
-        Mono m[] = { { P(C(-1), 1), 0 }, { P(C(1), 1), 0 } };
+        Mono m[] = { M(P(C(-1), 1), 0), M(P(C(1), 1), 0) };
         res &= TestAddMonos(2, m, C(0));
     }
     {
-        Mono m[] = { { P(C(-1), 0), 1 }, { P(C(1), 0), 1 },
-                     { C(2), 0 }, { C(1), 1 },
-                     { P(C(2), 1), 2 }, { P(C(2), 2), 2 } };
+        Mono m[] = { M(P(C(-1), 0), 1), M(P(C(1), 0), 1),
+                     M(C(2), 0), M(C(1), 1),
+                     M(P(C(2), 1), 2), M(P(C(2), 2), 2) };
         res &= TestAddMonos(6, m, P(C(2), 0, C(1), 1, P(C(2), 1, C(2), 2), 2));
     }
     return res;
@@ -1664,5 +1677,21 @@ bool OverflowTest()
     return res;
 }
 
-
-
+void MemoryTest()
+{
+    Poly *p = malloc(sizeof(struct Poly));
+    *p = PolyFromCoeff(5);
+    Mono m = MonoFromPoly(p, 4);
+    *p = PolyFromCoeff(3);
+    PolyDestroy(p);
+    free(p); // To nie jest Destroy, to tylko zwalnia malloca
+    Poly p2 = PolyAddMonos(1, &m);
+    Poly p3 = PolyAt(&p2, 2);
+    Poly p4 = PolyFromCoeff(80);
+    if (!PolyIsEq(&p4, &p3)){
+        fprintf(stderr, "[MemoryTest] error");
+    }
+    PolyDestroy(&p2);
+    PolyDestroy(&p3);
+    PolyDestroy(&p4);
+}
