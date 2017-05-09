@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "poly.h"
 
 
@@ -50,21 +51,47 @@ Poly PolyClone(const Poly *p)
     return out;
 }
 
+Poly PolyAdd(const Poly *p, const Poly *q)
+{
 
-Poly PolyAdd(const Poly *p, const Poly *q);
+}
 
-Poly PolyAddMonos(unsigned count, const Mono monos[]);
+Poly PolyAddMonos(unsigned count, const Mono monos[])
+{
 
-Poly PolyMul(const Poly *p, const Poly *q);
+}
 
-Poly PolyNeg(const Poly *p);
+Poly PolyMul(const Poly *p, const Poly *q)
+{
 
-Poly PolySub(const Poly *p, const Poly *q);
+}
 
-poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx);
+Poly PolyNeg(const Poly *p)
+{
 
-poly_exp_t PolyDeg(const Poly *p);
+}
 
-bool PolyIsEq(const Poly *p, const Poly *q);
+Poly PolySub(const Poly *p, const Poly *q)
+{
 
-Poly PolyAt(const Poly *p, poly_coeff_t x);
+}
+
+poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
+{
+
+}
+
+poly_exp_t PolyDeg(const Poly *p)
+{
+
+}
+
+bool PolyIsEq(const Poly *p, const Poly *q)
+{
+
+}
+
+Poly PolyAt(const Poly *p, poly_coeff_t x)
+{
+
+}
