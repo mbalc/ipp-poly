@@ -34,7 +34,6 @@ typedef struct Poly
     Mono* first; ///< jednomian o największym wykładniku
     Mono* last; ///< jednomian o największym wykładniku
     poly_coeff_t abs_term; ///< wartość wyrazu wolnego
-    poly_size_t size; ///< rozmiar wielomianu
 } Poly;
 
 /**
@@ -58,7 +57,7 @@ typedef struct Mono
  */
 static inline Poly PolyFromCoeff(poly_coeff_t c)
 {
-    return (Poly) {.first = NULL, .last = NULL, .abs_term = c, .size = 0};
+    return (Poly) {.first = NULL, .last = NULL, .abs_term = c};
 }
 
 /**
