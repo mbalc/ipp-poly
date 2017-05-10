@@ -64,19 +64,19 @@ void PushMonoIntoPoly(Poly *p, Mono *m)
 Poly PolyAdd(const Poly *p, const Poly *q)
 {
     Poly out = PolyFromCoeff(p->abs_term + q->abs_term);
-    Poly* buff = PolyMalloc();
+    Poly buff = PolyZero();
     Mono *p_ptr = p->last, *q_ptr = q->last;
 
     while (p_ptr != NULL && q_ptr != NULL)
     {
         if (p_ptr->exp == q_ptr->exp)
         {
-            *buff = PolyAdd(&p_ptr->p, &q_ptr->p);
-            if (!PolyIsZero(buff))
+            buff = PolyAdd(&p_ptr->p, &q_ptr->p);
+            if (!PolyIsZero(&buff))
             {
                 PushMonoIntoPoly(&out, MonoMalloc());
                 *(out.first) = MonoFromPoly(PolyMalloc(), p_ptr->exp);
-                out.first->p = PolyClone(buff);
+                out.first->p = PolyClone(&buff);
                 p_ptr = p_ptr->prev;
                 q_ptr = q_ptr->prev;
 
@@ -105,7 +105,7 @@ Poly PolyAdd(const Poly *p, const Poly *q)
         p_ptr = p_ptr->prev;
     }
 
-    PolyDestroy(buff);
+    PolyDestroy(&buff);
 
     return out;
 }
@@ -115,22 +115,51 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
 
 }
 
+Poly PolyCoeffMul(const Poly *p, poly_coeff_t x)
+{
+    Poly out = PolyFromCoeff(p->abs_term * x);
+    for (Mono* p_ptr = p->last; p_ptr != NULL; p_ptr = p_ptr->prev)
+    {
+        PushMonoIntoPoly(&out, MonoMalloc());
+        out.first->exp = p_ptr->exp;
+        out.first->p = PolyCoeffMul(&p_ptr->p, x);
+    }
+    return out;
+}
+
 Poly PolyMul(const Poly *p, const Poly *q)
 {
-
+    Poly out = PolyZero();
+    Poly buff = PolyCoeffMul(q, p->abs_term);
+    out = PolyAdd(&out, &buff);
+    buff = PolyCoeffMul(p, q->abs_term);
+    out = PolyAdd(&out, &buff);
+    out.abs_term /= 2;
+    for (Mono* p_ptr = p->last; p_ptr != NULL; p_ptr = p_ptr->prev)
+    {
+        buff = PolyZero();
+        for (Mono* q_ptr = q->last; q_ptr != NULL; q_ptr = q_ptr->prev)
+        {
+            PushMonoIntoPoly(&buff, MonoMalloc());
+            buff.first->exp = p_ptr->exp + q_ptr->exp;
+            buff.first->p = PolyMul(&p_ptr->p, &q_ptr->p);
+        }
+        out = PolyAdd(&out, &buff);
+    }
+    return out;
 }
 
 Poly PolyNeg(const Poly *p)
 {
     Poly out = PolyFromCoeff(-p->abs_term);
-    Poly* buff;
+    Poly* ptr;
     for (Mono* p_ptr = p->last; p_ptr != NULL; p_ptr = p_ptr->prev)
     {
         PushMonoIntoPoly(&out, MonoMalloc());
         *(out.first) = MonoClone(p_ptr);
-        buff = &out.first->p;
-        out.first->p = PolyNeg(buff);
-        PolyDestroy(buff);
+        ptr = &out.first->p;
+        out.first->p = PolyNeg(ptr);
+        PolyDestroy(ptr);
     }
     return out;
 }
