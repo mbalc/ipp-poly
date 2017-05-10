@@ -71,46 +71,47 @@ void PushMonoIntoPoly (Poly *p, Mono *m) {
 Poly PolyAdd(const Poly *p, const Poly *q)
 {
     Poly out = PolyFromCoeff (p->abs_term + q->abs_term);
-    Poly add = PolyZero();
-    Mono *pPtr = p->last, *qPtr = q->last;
+    Poly* buff = PolyMalloc();
+    Mono *PPtr = p->last, *QPtr = q->last;
 
-    while (pPtr != NULL && qPtr != NULL)
+    while (PPtr != NULL && QPtr != NULL)
     {
-        if (pPtr->exp == qPtr->exp)
+        if (PPtr->exp == QPtr->exp)
         {
-            add = PolyAdd(&pPtr->p, &qPtr->p);
-            if (!PolyIsZero(&add))
+            *buff = PolyAdd(&PPtr->p, &QPtr->p);
+            if (!PolyIsZero(buff))
             {
                 PushMonoIntoPoly (&out, MonoMalloc());
-                *(out.first) = MonoFromPoly (PolyMalloc(), pPtr->exp);
-                out.first->p = PolyClone (&add);
-                pPtr = pPtr->prev;
-                qPtr = qPtr->prev;
+                *(out.first) = MonoFromPoly (PolyMalloc(), PPtr->exp);
+                out.first->p = PolyClone (buff);
+                PPtr = PPtr->prev;
+                QPtr = QPtr->prev;
 
             }
         }
-        else if (pPtr->exp < qPtr->exp)
+        else if (PPtr->exp < QPtr->exp)
         {
             PushMonoIntoPoly (&out, MonoMalloc());
-            *(out.first) = MonoClone (pPtr);
-            pPtr = pPtr->prev;
+            *(out.first) = MonoClone (PPtr);
+            PPtr = PPtr->prev;
         }
-        else if (pPtr->exp > qPtr->exp)
+        else if (PPtr->exp > QPtr->exp)
         {
             PushMonoIntoPoly (&out, MonoMalloc());
-            *(out.first) = MonoClone (qPtr);
-            qPtr = qPtr->prev;
+            *(out.first) = MonoClone (QPtr);
+            QPtr = QPtr->prev;
         }
     }
 
-    if (qPtr != NULL) pPtr = qPtr;
-    while (pPtr != NULL) {
+    if (QPtr != NULL) PPtr = QPtr;
+    while (PPtr != NULL)
+    {
         PushMonoIntoPoly (&out, MonoMalloc());
-        *(out.first) = MonoClone (pPtr);
-        pPtr = pPtr->prev;
+        *(out.first) = MonoClone (PPtr);
+        PPtr = PPtr->prev;
     }
 
-    PolyDestroy (&add);
+    PolyDestroy (buff);
 
     return out;
 }
@@ -127,12 +128,24 @@ Poly PolyMul(const Poly *p, const Poly *q)
 
 Poly PolyNeg(const Poly *p)
 {
-
+    Poly out = PolyFromCoeff (-p->abs_term);
+    Poly* buff;
+    for (Mono* PPtr = p->last; PPtr != NULL; PPtr = PPtr->prev) {
+        PushMonoIntoPoly (&out, MonoMalloc());
+        *(out.first) = MonoClone (PPtr);
+        buff = &out.first->p;
+        out.first->p = PolyNeg(buff);
+        PolyDestroy(buff);
+    }
+    return out;
 }
 
 Poly PolySub(const Poly *p, const Poly *q)
 {
-
+    Poly neg = PolyNeg (q);
+    Poly out = PolyAdd (p, &neg);
+    PolyDestroy (&neg);
+    return out;
 }
 
 poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
@@ -153,13 +166,13 @@ bool MonoIsEq(const Mono *a, const Mono *b)
 
 bool PolyIsEq(const Poly *p, const Poly *q)
 {
-    Mono *pPtr = p->last, *qPtr = q->last;
-    while (pPtr != NULL && qPtr != NULL) {
-        if (!MonoIsEq (pPtr, qPtr)) return false;
-        pPtr = pPtr->prev;
-        qPtr = qPtr->prev;
+    Mono *PPtr = p->last, *QPtr = q->last;
+    while (PPtr != NULL && QPtr != NULL) {
+        if (!MonoIsEq (PPtr, QPtr)) return false;
+        PPtr = PPtr->prev;
+        QPtr = QPtr->prev;
     }
-    if (pPtr != qPtr) return false;
+    if (PPtr != QPtr) return false;
     return p->abs_term == q->abs_term;
 }
 
