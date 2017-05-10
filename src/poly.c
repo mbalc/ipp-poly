@@ -145,7 +145,11 @@ poly_exp_t PolyDeg(const Poly *p)
 
 }
 
-bool MonoIsEq(const Mono *a, const Mono *b);
+bool MonoIsEq(const Mono *a, const Mono *b)
+{
+    if (a->exp != b->exp) return false;
+    return PolyIsEq(&a->p, &b->p);
+}
 
 bool PolyIsEq(const Poly *p, const Poly *q)
 {
@@ -158,13 +162,6 @@ bool PolyIsEq(const Poly *p, const Poly *q)
     if (pPtr != qPtr) return false;
     return p->abs_term == q->abs_term;
 }
-
-bool MonoIsEq(const Mono *a, const Mono *b)
-{
-    if (a->exp != b->exp) return false;
-    return PolyIsEq(&a->p, &b->p);
-}
-
 
 Poly PolyAt(const Poly *p, poly_coeff_t x)
 {
