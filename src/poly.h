@@ -58,7 +58,7 @@ typedef struct Mono
  */
 static inline Poly PolyFromCoeff(poly_coeff_t c)
 {
-    return (Poly) {.first = NULL, .last = NULL, .abs_term = c};
+    return (Poly) {.first = NULL, .last = NULL, .abs_term = c, .size = 0};
 }
 
 /**

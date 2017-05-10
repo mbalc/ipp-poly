@@ -4,32 +4,17 @@
 #include "poly.h"
 
 
-Poly* PolyMalloc () {
-    Poly* out = malloc (sizeof (Poly));
+
+static inline Poly* PolyMalloc () {
+    Poly* out = (Poly*) malloc (sizeof (Poly));
     assert (out);
     return out;
 }
 
-Mono* MonoMalloc () {
-    Mono* out = malloc (sizeof (Mono));
+static inline Mono* MonoMalloc () {
+    Mono* out = (Mono*) malloc (sizeof (Mono));
     assert (out);
     return out;
-}
-
-void PolyDestroy(Poly *p)
-{
-    if (!PolyIsCoeff(p))
-    {
-        Mono* toDestroy;
-        while (p->first != p->last)
-        {
-            toDestroy = p->first;
-            p->first = toDestroy->next;
-            MonoDestroy(toDestroy);
-        }
-        MonoDestroy(p->last);
-    }
-    free(p);
 }
 
 
@@ -37,6 +22,20 @@ static void LinkMonos(Mono *left, Mono *right)
 {
     if (left != NULL) left->next = right;
     if (right != NULL) right->prev = left;
+}
+
+void RemoveMonoFromPoly (Poly *p, Mono *m) {
+    if (m->prev == NULL) p->first = m->next;
+    if (m->next == NULL) p->last = m->prev;
+    LinkMonos (m->prev, m->next);
+    MonoDestroy (m);
+}
+
+void PolyDestroy(Poly *p)
+{
+    while (!PolyIsCoeff(p)) {
+        RemoveMonoFromPoly (p, p->first);
+    }
 }
 
 Poly PolyClone(const Poly *p)
@@ -63,13 +62,6 @@ Poly PolyClone(const Poly *p)
     return out;
 }
 
-void RemoveMonoFromPoly (Poly *p, Mono *m) {
-    if (m->prev == NULL) p->first = m->next;
-    if (m->next == NULL) p->last = m->prev;
-    LinkMonos (m->prev, m->next);
-    MonoDestroy (m);
-}
-
 void PushMonoIntoPoly (Poly *p, Mono *m) {
     LinkMonos (m, p->first);
     p->first = m;
@@ -79,31 +71,31 @@ void PushMonoIntoPoly (Poly *p, Mono *m) {
 Poly PolyAdd(const Poly *p, const Poly *q)
 {
     Poly out = PolyFromCoeff (p->abs_term + q->abs_term);
-    Poly* add = PolyMalloc();
+    Poly add = PolyZero();
     Mono *pPtr = p->last, *qPtr = q->last;
 
-    while (p != NULL || q != NULL)
+    while (pPtr != NULL && qPtr != NULL)
     {
         if (pPtr->exp == qPtr->exp)
         {
-            *add = PolyAdd(&pPtr->p, &qPtr->p);
-            if (!PolyIsZero(add))
+            add = PolyAdd(&pPtr->p, &qPtr->p);
+            if (!PolyIsZero(&add))
             {
                 PushMonoIntoPoly (&out, MonoMalloc());
                 *(out.first) = MonoFromPoly (PolyMalloc(), pPtr->exp);
-                out.first->p = PolyClone (add);
+                out.first->p = PolyClone (&add);
                 pPtr = pPtr->prev;
                 qPtr = qPtr->prev;
 
             }
         }
-        if (pPtr->exp < qPtr->exp)
+        else if (pPtr->exp < qPtr->exp)
         {
             PushMonoIntoPoly (&out, MonoMalloc());
             *(out.first) = MonoClone (pPtr);
             pPtr = pPtr->prev;
         }
-        if (pPtr->exp > qPtr->exp)
+        else if (pPtr->exp > qPtr->exp)
         {
             PushMonoIntoPoly (&out, MonoMalloc());
             *(out.first) = MonoClone (qPtr);
@@ -117,6 +109,8 @@ Poly PolyAdd(const Poly *p, const Poly *q)
         *(out.first) = MonoClone (pPtr);
         pPtr = pPtr->prev;
     }
+
+    PolyDestroy (&add);
 
     return out;
 }
