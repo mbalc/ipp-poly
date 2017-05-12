@@ -34,6 +34,8 @@ typedef struct Poly
         poly_coeff_t abs_term; ///< wartość wyrazu wolnego
 } Poly;
 
+void PrintPoly(const Poly *p, char x);
+
 /**
  * Struktura przechowująca jednomian
  * Jednomian ma postać `p * x^e`.
