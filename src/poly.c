@@ -47,7 +47,7 @@ static void LinkMonos(Mono *left, Mono *right)
     }
 }
 
-void RemoveMonoFromPoly(Poly *p, Mono *m)
+static void UnlinkMonoFromPoly(Poly *p, Mono *m)
 {
     p->first = m->next;
     if (m->next == NULL)
@@ -62,7 +62,7 @@ void PolyDestroy(Poly *p)
 {
     for (Mono *ptr = p->first; ptr != NULL; ptr = p->first)
     {
-        RemoveMonoFromPoly(p, ptr);
+        UnlinkMonoFromPoly(p, ptr);
         free(ptr);
     }
 }
@@ -321,6 +321,36 @@ bool PolyIsEq(const Poly *p, const Poly *q)
     return p->abs_term == q->abs_term;
 }
 
+static poly_coeff_t FastPower(poly_coeff_t x, poly_exp_t e)
+{
+    if (e == 0)
+    {
+        return 1;
+    }
+    poly_coeff_t m;
+    if (e % 2 == 0)
+    {
+        m = FastPower(x, e / 2);
+        return m * m;
+    }
+    else
+    {
+        return x * FastPower(x, e - 1);
+    }
+}
+
 Poly PolyAt(const Poly *p, poly_coeff_t x)
 {
+    Poly out = PolyFromCoeff(p->abs_term);
+    Poly buffer, aux;
+    poly_coeff_t a = 1, e = 0;
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
+    {
+        buffer = PolyCoeffMul(&ptr->p, a * FastPower(x, ptr->exp - e));
+        aux = PolyAdd(&buffer, &out);
+        PolyDestroy(&buffer);
+        PolyDestroy(&out);
+        out = aux;
+    }
+    return out;
 }
