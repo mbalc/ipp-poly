@@ -7,8 +7,20 @@
 
 void PrintPoly(const Poly *p, char x)
 {
-    for (Mono *ptr = p->first; ptr != NULL; ptr = ptr->next)
+    if (p->abs_term > 0)
     {
+        printf("%ld", p->abs_term);
+    }
+    if (p->abs_term < 0)
+    {
+        printf("(%ld)", p->abs_term);
+    }
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
+    {
+        if (ptr != p->last || p->abs_term != 0)
+        {
+            printf("+");
+        }
         if (PolyIsCoeff(&ptr->p))
         {
             PrintPoly(&ptr->p, x + 1);
@@ -19,15 +31,7 @@ void PrintPoly(const Poly *p, char x)
             PrintPoly(&ptr->p, x + 1);
             printf(")");
         }
-        printf("%c^%ld+", x, ptr->exp);
-    }
-    if (p->abs_term >= 0)
-    {
-        printf("%ld", p->abs_term);
-    }
-    else
-    {
-        printf("(%ld)", p->abs_term);
+        printf("%c^%ld", x, ptr->exp);
     }
 }
 
@@ -138,10 +142,6 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
     assert(count > 0);
     Mono *arr = calloc(count, sizeof(Mono));
     arr = memcpy(arr, monos, count * sizeof(Mono));
-    for (unsigned i = 0; i < count; ++i)
-    {
-        MonoDestroy(&arr[i]);
-    }
     qsort(arr, count, sizeof(Mono), CompareMonos);
     Poly out = PolyZero();
     Mono buf = arr[count - 1];
@@ -242,9 +242,31 @@ Poly PolySub(const Poly *p, const Poly *q)
     return out;
 }
 
+static poly_exp_t MaxExp(poly_exp_t a, poly_exp_t b)
+{
+    if (a < b)
+    {
+        return b;
+    }
+    return a;
+}
+
 poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
 {
-
+    if (PolyIsZero(p))
+    {
+        return -1;
+    }
+    if (var_idx == 0)
+    {
+        return p->first->exp;
+    }
+    poly_exp_t out = 0;
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
+    {
+        out = MaxExp(out, PolyDegBy(&ptr->p, var_idx - 1));
+    }
+    return out;
 }
 
 poly_exp_t PolyDeg(const Poly *p)
@@ -282,5 +304,4 @@ bool PolyIsEq(const Poly *p, const Poly *q)
 
 Poly PolyAt(const Poly *p, poly_coeff_t x)
 {
-
 }
