@@ -143,13 +143,17 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
     Mono *arr = calloc(count, sizeof(Mono));
     arr = memcpy(arr, monos, count * sizeof(Mono));
     qsort(arr, count, sizeof(Mono), CompareMonos);
-    Poly out = PolyZero();
+    Poly out = PolyZero(), aux;
     Mono buf = arr[count - 1];
     for (int i = count - 2; i >= 0; --i)
     {
         if (arr[i].exp == buf.exp)
         {
-            buf.p = PolyAdd(&buf.p, &arr[i].p);
+
+            aux = PolyAdd(&buf.p, &arr[i].p);
+            PolyDestroy(&buf.p);
+            PolyDestroy(&arr[i].p);
+            buf.p = aux;
         }
 
         if (arr[i].exp > buf.exp)
@@ -175,10 +179,7 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
         {
             Mono *ptr = out.last->prev;
             MonoDestroy(out.last);
-            if (ptr != NULL)
-            {
-                free(out.last);
-            }
+            free(out.last);
             out.last = ptr;
             LinkMonos(out.last, NULL);
         }
@@ -201,11 +202,12 @@ Poly PolyCoeffMul(const Poly *p, poly_coeff_t x)
 
 Poly PolyMul(const Poly *p, const Poly *q)
 {
-    Poly out = PolyCoeffMul(q, p->abs_term);
+    Poly aux = PolyCoeffMul(q, p->abs_term);
     Poly buffer = PolyCoeffMul(p, q->abs_term);
-    out = PolyAdd(&out, &buffer);
+    Poly out = PolyAdd(&aux, &buffer);
     out.abs_term /= 2;
-
+    PolyDestroy(&aux);
+    PolyDestroy(&buffer);
     Mono buf;
     for (Mono *p_ptr = p->last; p_ptr != NULL; p_ptr = p_ptr->prev)
     {
@@ -216,7 +218,10 @@ Poly PolyMul(const Poly *p, const Poly *q)
             buf.p = PolyMul(&p_ptr->p, &q_ptr->p);
             ExtendPoly(&buffer, buf);
         }
-        out = PolyAdd(&out, &buffer);
+        aux = PolyAdd(&out, &buffer);
+        PolyDestroy(&out);
+        out = aux;
+        PolyDestroy(&buffer);
     }
     return out;
 }
@@ -229,6 +234,7 @@ Poly PolyNeg(const Poly *p)
     {
         ExtendPoly(&out, MonoClone(p_ptr));
         mem = PolyNeg(&out.first->p);
+        PolyDestroy(&out.first->p);
         out.first->p = mem;
     }
     return out;
@@ -251,11 +257,17 @@ static poly_exp_t MaxExp(poly_exp_t a, poly_exp_t b)
     return a;
 }
 
+static const unsigned EVALUATE_DEG = -1;
+
 poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
 {
     if (PolyIsZero(p))
     {
         return -1;
+    }
+    if (PolyIsCoeff(p))
+    {
+        return 0;
     }
     if (var_idx == 0)
     {
@@ -264,14 +276,21 @@ poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
     poly_exp_t out = 0;
     for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
     {
-        out = MaxExp(out, PolyDegBy(&ptr->p, var_idx - 1));
+        if (var_idx == EVALUATE_DEG)
+        {
+            out = MaxExp(out, PolyDeg(&ptr->p) + ptr->exp);
+        }
+        else
+        {
+            out = MaxExp(out, PolyDegBy(&ptr->p, var_idx - 1));
+        }
     }
     return out;
 }
 
 poly_exp_t PolyDeg(const Poly *p)
 {
-
+    return PolyDegBy(p, EVALUATE_DEG);
 }
 
 bool MonoIsEq(const Mono *a, const Mono *b)
