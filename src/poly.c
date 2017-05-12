@@ -157,9 +157,9 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
         out.last->p.abs_term = 0;
         if (PolyIsZero(&out.last->p))
         {
-            buf = *out.last->prev;
+            Mono *ptr = out.last->prev;
             MonoDestroy(out.last);
-            *out.last = buf;
+            out.last = ptr;
             LinkMonos(out.last, NULL);
         }
     }
