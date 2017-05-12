@@ -5,6 +5,26 @@
 #include "poly.h"
 
 
+void PrintPoly(const Poly *p, char x)
+{
+    for (Mono *ptr = p->first; ptr != NULL; ptr = ptr->next)
+    {
+        if (PolyIsCoeff(&ptr->p))
+            PrintPoly(&ptr->p, x + 1);
+        else
+        {
+            printf("(");
+            PrintPoly(&ptr->p, x + 1);
+            printf(")");
+        }
+        printf("%c^%ld+", x, ptr->exp);
+    }
+    if (p->abs_term >= 0)
+        printf("%ld", p->abs_term);
+    else
+        printf("(%ld)", p->abs_term);
+}
+
 static void LinkMonos(Mono *left, Mono *right)
 {
     if (left != NULL)
@@ -139,6 +159,17 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
     }
     PushMonoIntoPoly(&out, buf);
     free(arr);
+    if (out.last->exp == 0)
+    {
+        out.abs_term = out.last->p.abs_term;
+        out.last->p.abs_term = 0;
+        if (PolyIsZero(&out.last->p))
+        {
+            out.last = out.last->prev;
+            MonoDestroy(out.last->next);
+            LinkMonos(out.last, NULL);
+        }
+    }
     return out;
 }
 
