@@ -175,7 +175,10 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
         {
             Mono *ptr = out.last->prev;
             MonoDestroy(out.last);
-            free(out.last);
+            if (ptr != NULL)
+            {
+                free(out.last);
+            }
             out.last = ptr;
             LinkMonos(out.last, NULL);
         }
