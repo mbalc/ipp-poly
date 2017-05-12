@@ -18,10 +18,7 @@
 typedef long poly_coeff_t;
 
 /** Typ wykładników wielomianu */
-typedef int poly_exp_t;
-
-/** Typ rozmoaru wielomianów */
-typedef int poly_size_t;
+typedef long poly_exp_t;
 
 
 typedef struct Mono Mono;
@@ -129,8 +126,7 @@ void PolyDestroy(Poly *p);
  */
 static inline void MonoDestroy(Mono *m)
 {
-        PolyDestroy (&(m->p));
-        free (m);
+        PolyDestroy (&m->p);
 }
 
 /**

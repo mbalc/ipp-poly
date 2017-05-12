@@ -25,34 +25,13 @@ void RemoveMonoFromPoly(Poly *p, Mono *m)
 
 void PolyDestroy(Poly *p)
 {
+    Mono *ptr;
     while (!PolyIsCoeff(p))
     {
+        ptr = p->first;
         RemoveMonoFromPoly(p, p->first);
+        free(ptr);
     }
-}
-
-Poly PolyClone(const Poly *p)
-{
-    Poly out = PolyFromCoeff(p->abs_term);
-    if (!PolyIsCoeff(p))
-    {
-        Mono *iter = p->first;
-        Mono *head = MonoMalloc();
-        Mono *toAdd = MonoMalloc();
-        *head = MonoClone(iter);
-        out.first = head;
-        LinkMonos(NULL, out.first);
-        while (iter != p->last)
-        {
-            iter = iter->next;
-            *toAdd = MonoClone(iter);
-            LinkMonos(head, toAdd);
-            head = toAdd;
-        }
-        out.last = head;
-        LinkMonos(out.last, NULL);
-    }
-    return out;
 }
 
 void PushMonoIntoPoly(Poly *p, Mono *m)
@@ -61,6 +40,20 @@ void PushMonoIntoPoly(Poly *p, Mono *m)
     p->first = m;
     if (p->last == NULL)
         p->last = m;
+}
+
+Poly PolyClone(const Poly *p)
+{
+    Poly out = PolyFromCoeff(p->abs_term);
+    Mono *buf = MonoMalloc();
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
+    {
+        *buf = MonoClone(ptr);
+        PushMonoIntoPoly(&out, buf);
+        buf = MonoMalloc();
+    }
+    free(buf);
+    return out;
 }
 
 Poly PolyAdd(const Poly *p, const Poly *q)
@@ -79,10 +72,9 @@ Poly PolyAdd(const Poly *p, const Poly *q)
                 PushMonoIntoPoly(&out, MonoMalloc());
                 *(out.first) = MonoFromPoly(PolyMalloc(), p_ptr->exp);
                 out.first->p = PolyClone(&buf);
-                p_ptr = p_ptr->prev;
-                q_ptr = q_ptr->prev;
-
             }
+            p_ptr = p_ptr->prev;
+            q_ptr = q_ptr->prev;
         }
         else if (p_ptr->exp < q_ptr->exp)
         {
@@ -122,6 +114,8 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
     assert(count > 0);
     Mono *arr = calloc(count, sizeof(Mono));
     arr = memcpy(arr, monos, count * sizeof(Mono));
+    for (unsigned i = 0; i < count; ++i)
+        MonoDestroy(&arr[i]);
     qsort(arr, count, sizeof(Mono), CompareMonos);
     Poly out = PolyZero();
     Mono *buf = MonoMalloc();
