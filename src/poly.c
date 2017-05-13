@@ -141,7 +141,10 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
 {
     assert(count > 0);
     Mono *arr = calloc(count, sizeof(Mono));
-    arr = memcpy(arr, monos, count * sizeof(Mono));
+    for (unsigned i = 0; i < count; ++i)
+    {
+        arr[i] = monos[i];
+    }
     qsort(arr, count, sizeof(Mono), CompareMonos);
     Poly out = PolyZero(), aux;
     Mono buf = arr[count - 1];
@@ -179,7 +182,10 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
         {
             Mono *ptr = out.last->prev;
             MonoDestroy(out.last);
-            free(out.last);
+            if (ptr != NULL)
+            {
+                free(out.last);
+            }
             out.last = ptr;
             LinkMonos(out.last, NULL);
         }
@@ -229,13 +235,12 @@ Poly PolyMul(const Poly *p, const Poly *q)
 Poly PolyNeg(const Poly *p)
 {
     Poly out = PolyFromCoeff(-p->abs_term);
-    Poly mem;
-    for (Mono *p_ptr = p->last; p_ptr != NULL; p_ptr = p_ptr->prev)
+    Mono buf;
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
     {
-        ExtendPoly(&out, MonoClone(p_ptr));
-        mem = PolyNeg(&out.first->p);
-        PolyDestroy(&out.first->p);
-        out.first->p = mem;
+        buf.p = PolyNeg(&ptr->p);
+        buf.exp = ptr->exp;
+        ExtendPoly(&out, buf);
     }
     return out;
 }
