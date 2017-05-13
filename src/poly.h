@@ -2,7 +2,7 @@
    Interfejs klasy wielomianów
 
    @author Jakub Pawlewicz <pan@mimuw.edu.pl>,\n
-   Michał Balcerzak <mb385130@mimuw.edu.pl>
+   Michał Balcerzak <mb385130@students.mimuw.edu.pl>
    @copyright Uniwersytet Warszawski
    @date 2017-04-24, 2017-05-13
  */
@@ -164,6 +164,14 @@ static inline void MonoDestroy(Mono *m)
 Poly PolyAdd(const Poly *p, const Poly *q);
 
 /**
+ * Przemnaża dany wielomian przez stałą @p x
+ * @param[in]  p : wielomian
+ * @param[in]  x : stała
+ * @return 'p * x'
+ */
+Poly PolyCoeffMul(const Poly *p, poly_coeff_t x);
+
+/**
  * Mnoży dwa wielomiany.
  * @param[in] p : wielomian
  * @param[in] q : wielomian
@@ -267,7 +275,8 @@ Poly PolyAt(const Poly *p, poly_coeff_t x);
 
 /**
  * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
- * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu łacińskiego.
+ * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu
+ * łacińskiego.
  * @param[in] p : wielomian
  */
 void PrintPoly(const Poly *p);

@@ -1,7 +1,7 @@
 /** @file
    Implementacja interfejsu klasy wielomianów
 
-   @author Michał Balcerzak <mb385130@mimuw.edu.pl>
+   @author Michał Balcerzak <mb385130@students.mimuw.edu.pl>
    @copyright Uniwersytet Warszawski
    @date 2017-05-13
  */
@@ -21,7 +21,7 @@
  * @param[in] p : wielomian
  * @param[in] c : literowa nazwa parametru
  */
-void PrintPolyList(const Poly *p, char c)
+static void PrintPolyList(const Poly *p, char c)
 {
     if (p->abs_term > 0)
     {
@@ -53,6 +53,8 @@ void PrintPolyList(const Poly *p, char c)
 
 /**
  * @details Implementacja procedury PrintPoly udokumentowanej w pliku poly.h.
+ * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu
+ * łacińskiego.
  * @param[in] p : wielomian
  */
 void PrintPoly(const Poly *p)
@@ -61,7 +63,7 @@ void PrintPoly(const Poly *p)
 }
 
 /**
- * Alokuje na stercie (ang. heap) miejsce na strukturę Mono.
+ * Alokuje na stercie (ang - heap) miejsce na strukturę Mono.
  * @return wskaźnik na nowy obszar w pamięci
  */
 static inline Mono* MonoMalloc()
@@ -125,7 +127,7 @@ void PolyDestroy(Poly *p)
  * @param[in, out] p   : wielomian
  * @param[in] val      : jednomian do wstawienia
  */
-void PolyAppendMono(Poly *p, Mono val)
+static void PolyAppendMono(Poly *p, Mono val)
 {
     Mono *m = MonoMalloc();
     *m = val;
@@ -155,6 +157,8 @@ Poly PolyClone(const Poly *p)
 /**
  * @details Implementacja procedury PolyAdd udokumentowanej w pliku poly.h.
  * @param[in] p : wielomian
+ * @param[in] q : wielomian
+ * @return `p + q`
  */
 Poly PolyAdd(const Poly *p, const Poly *q)
 {
@@ -286,7 +290,7 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
 }
 
 /**
- * Przemnaża dany wielomian przez stałą @p x
+ * @details Implementacja procedury PolyCoeffMul udokumentowanej w pliku poly.h.
  * @param[in]  p : wielomian
  * @param[in]  x : stała
  * @return 'p * x'
@@ -402,7 +406,7 @@ static poly_exp_t MaxExp(poly_exp_t a, poly_exp_t b)
  * stopień wielomianu ze względu na zmienną o numerze @p var_idx - w przeciwnym
  * przypadku
  */
-poly_exp_t PolyDegEvaluate(const Poly *p, long var_idx)
+static poly_exp_t PolyDegEvaluate(const Poly *p, long var_idx)
 {
     if (PolyIsZero(p))
     {
@@ -501,7 +505,7 @@ bool PolyIsEq(const Poly *p, const Poly *q)
 }
 
 /**
- * Oblicza w logarytmicznym czasie @f$x^e@f$.
+ * Oblicza w logarytmicznym czasie wartość liczby @f$x^e@f$.
  * @param[in]  x : liczba do spotęgowania
  * @param[in]  e : wykładnik docelowej potęgi
  * @return @f$x^e@f$
