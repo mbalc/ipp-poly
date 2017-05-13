@@ -25,13 +25,20 @@ typedef struct Mono Mono;
 
 /**
  * Struktura przechowująca wielomian
- * TODO
+ * Wielomian ma postać '(m1 + m2 + ... + mn) + b' gdzie m1..mn są jednomianami.
+ * Na wielomian składa się uporządkowana lista jednomianów oraz wyraz wolny.
+ * Porządek tej listy jest ściśle malejący względem wykładników jednomianów.
+ * Pierwszy jednomian listy ma największy wykładnik, ostatni - najmniejszy.
+ * Struktura Poly przechowuje jedynie wskaźniki na skrajne elementy tej listy.
+ * Wielomian może być wielomianem stałym - wtedy lista jednomianów jest listą pustą.
+ * W takim przypadku oba wskaźniki na skrajne elementy listy wskazują na NULL.
+ * Wszelkie składniki stałe (niezależne od zmiennych) sa pamiętane w wyrazie wolnym.
  */
 typedef struct Poly
 {
-        Mono* first; ///< jednomian o największym wykładniku
-        Mono* last; ///< jednomian o największym wykładniku
-        poly_coeff_t abs_term; ///< wartość wyrazu wolnego
+    Mono *first; ///< pierwszy element listy jednomianów (największy wykładnik)
+    Mono *last; ///< ostatni element listy jednomianów (najmniejszy wykładnik)
+    poly_coeff_t abs_term; ///< wartość wyrazu wolnego
 } Poly;
 
 
@@ -42,13 +49,14 @@ typedef struct Poly
  * Będzie on traktowany jako wielomian nad kolejną zmienną (nie nad x).
  * Jednomian jest elementem uporzadkowanej listy elementów pewnego wielomianu.
  * Zawiera on wskaźniki na sąsiednie jej elementy.
+ * Skrajne elementy listy wskazują na NULL jako sąsiada
  */
 typedef struct Mono
 {
-        Poly p; ///< współczynnik
-        poly_exp_t exp; ///< wykładnik
-        Mono* prev; ///< jednomian o większym wykładniku
-        Mono* next; ///< jednomian o mniejszym wykładniku
+    Poly p; ///< współczynnik
+    poly_exp_t exp; ///< wykładnik
+    Mono *prev; ///< poprzedni element listy (większy wykładnik)
+    Mono *next; ///< następny element listy (mniejszy wykładnik)
 } Mono;
 
 /**
@@ -58,22 +66,22 @@ typedef struct Mono
 void PrintPoly(const Poly *p);
 
 /**
- * Tworzy wielomian, który jest współczynnikiem.
+ * Tworzy wielomian stały, który jest współczynnikiem.
  * @param[in] c : wartość współczynnika
- * @return wielomian
+ * @return wielomian stały o wartości @p c
  */
 static inline Poly PolyFromCoeff(poly_coeff_t c)
 {
-        return (Poly) {.first = NULL, .last = NULL, .abs_term = c};
+    return (Poly) {.first = NULL, .last = NULL, .abs_term = c};
 }
 
 /**
  * Tworzy wielomian tożsamościowo równy zeru.
- * @return wielomian
+ * @return wielomian stały o wartości '0'
  */
 static inline Poly PolyZero()
 {
-        return PolyFromCoeff(0);
+    return PolyFromCoeff(0);
 }
 
 /**
@@ -85,7 +93,7 @@ static inline Poly PolyZero()
  */
 static inline Mono MonoFromPoly(const Poly *p, poly_exp_t e)
 {
-        return (Mono) {.p = *p, .exp = e, .prev = NULL, .next = NULL};
+    return (Mono) {.p = *p, .exp = e, .prev = NULL, .next = NULL};
 }
 
 /**
@@ -95,7 +103,11 @@ static inline Mono MonoFromPoly(const Poly *p, poly_exp_t e)
  */
 static inline bool PolyIsCoeff(const Poly *p)
 {
-        return (p->first == NULL);
+    if ((p->first == NULL) != (p->last == NULL))
+    {
+        assert(false);
+    }
+    return (p->first == NULL);
 }
 
 /**
@@ -105,7 +117,7 @@ static inline bool PolyIsCoeff(const Poly *p)
  */
 static inline bool PolyIsZero(const Poly *p)
 {
-        return (PolyIsCoeff (p) && p->abs_term == 0);
+    return (PolyIsCoeff(p) && p->abs_term == 0);
 }
 
 /**
@@ -120,7 +132,7 @@ void PolyDestroy(Poly *p);
  */
 static inline void MonoDestroy(Mono *m)
 {
-        PolyDestroy (&m->p);
+    PolyDestroy(&m->p);
 }
 
 /**
@@ -137,7 +149,7 @@ Poly PolyClone(const Poly *p);
  */
 static inline Mono MonoClone(const Mono *m)
 {
-        return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp};
+    return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp};
 }
 
 /**
