@@ -7,9 +7,18 @@ Uwaga: aktualna treść zadania znajduje się w [Moodle'u](https://moodle.mimuw.
 
 ### Opis projektu
 
-Tegoroczne duże zadanie polega na zaimplementowaniu operacji na wielomianach
-rzadkich wielu zmiennych.
+Pierwszy etap tegorocznego dużego zadania polega na zaimplementowaniu operacji
+na wielomianach rzadkich wielu zmiennych.
 
-TODO
+Niniejsza dokumentacja przybliża działanie poszczególnych procedur, wyjawia
+kilka istotnych szczegółów implementacyjnych oraz omawia założenia
+wykorzystywanych struktur danych. Potencjalnemu czytelnikowi życzę - miłej
+lektury!
+
+
+@author Jakub Pawlewicz <pan@mimuw.edu.pl>,\n
+Michał Balcerzak <mb385130@mimuw.edu.pl>
+@copyright Uniwersytet Warszawski
+@date 2017-04-24, 2017-05-13
 
 */

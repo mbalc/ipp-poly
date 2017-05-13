@@ -255,28 +255,42 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
             assert(false);
         }
     }
-    PolyAppendMono(&out, buf);
-    free(arr);
+    if (!PolyIsZero(&buf.p))
+    {
+        PolyAppendMono(&out, buf);
 
-    if (out.last->exp == 0)
-    {
-        out.abs_term = out.last->p.abs_term;
-        out.last->p.abs_term = 0;
-    }
-    if (PolyIsZero(&out.last->p))
-    {
-        Mono *ptr = out.last->prev;
-        MonoDestroy(out.last);
-        if (ptr != NULL)
+        if (out.last->exp == 0)
         {
-            free(out.last);
+            out.abs_term = out.last->p.abs_term;
+            out.last->p.abs_term = 0;
         }
-        out.last = ptr;
-        LinkMonos(out.last, NULL);
+//gdy właśnie wyzerowaliśmy najmniejszy z jednomianów
+        if (PolyIsZero(&out.last->p))
+        {
+            Mono *ptr = out.last->prev;
+            MonoDestroy(out.last);
+            if (ptr != NULL)
+            {
+                free(out.last);
+            }
+            out.last = ptr;
+            if (out.last == NULL)
+            {
+                out.first = NULL;
+            }
+            LinkMonos(out.last, NULL);
+        }
     }
+    free(arr);
     return out;
 }
 
+/**
+ * Przemnaża dany wielomian przez stałą @p x
+ * @param[in]  p : wielomian
+ * @param[in]  x : stała
+ * @return 'p * x'
+ */
 Poly PolyCoeffMul(const Poly *p, poly_coeff_t x)
 {
     Poly out = PolyFromCoeff(p->abs_term * x);
@@ -361,6 +375,12 @@ Poly PolySub(const Poly *p, const Poly *q)
     return out;
 }
 
+/**
+ * Zwraca większy z danych wykładników.
+ * @param[in]  a : wykładnik
+ * @param[in]  b : wykładnik
+ * @return 'max(a, b)'
+ */
 static poly_exp_t MaxExp(poly_exp_t a, poly_exp_t b)
 {
     if (a < b)
@@ -370,7 +390,19 @@ static poly_exp_t MaxExp(poly_exp_t a, poly_exp_t b)
     return a;
 }
 
-static poly_exp_t PolyDegEvaluate(const Poly *p, long var_idx)
+/**
+ * Zwraca  - zależnie od parametrów - stopień wielomianu ze względu na zadaną
+ * zmienną albo stopień całego wielomianu. Dla ujemnych wartości parametru
+ * @p var_idx oblicza stopień całego wielomianu wedle specyfikacji PolyDeg.
+ * W przeciwnym przypadku oblicza stopień wielomianu dla n-tej z kolei zmiennej
+ * wielomianu (dla n = var_idx + 1) według specyfikacji PolyDegBy.
+ * @param[in] p       : wielomian
+ * @param[in] var_idx : parametr pomocniczy określający działanie procedury
+ * @return stopień wielomianu - dla ujemnych @p var_idx \n
+ * stopień wielomianu ze względu na zmienną o numerze @p var_idx - w przeciwnym
+ * przypadku
+ */
+poly_exp_t PolyDegEvaluate(const Poly *p, long var_idx)
 {
     if (PolyIsZero(p))
     {
@@ -389,18 +421,15 @@ static poly_exp_t PolyDegEvaluate(const Poly *p, long var_idx)
     {
         if (var_idx < 0)
         {
-            out = MaxExp(out, PolyDeg(&ptr->p) + ptr->exp);
+            out = MaxExp(out, PolyDegEvaluate(&ptr->p, var_idx) + ptr->exp);
         }
         else
         {
-            out = MaxExp(out, PolyDegBy(&ptr->p, var_idx - 1));
+            out = MaxExp(out, PolyDegEvaluate(&ptr->p, var_idx - 1));
         }
     }
     return out;
 }
-
-
-static const unsigned EVALUATE_DEG = -1;
 
 /**
  * @details Implementacja procedury PolyDegBy udokumentowanej w pliku poly.h.
@@ -417,6 +446,10 @@ poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
     return (PolyDegEvaluate(p, var_idx));
 }
 
+///Ujemna liczba podawana przez PolyDeg do PolyDegEvaluate
+///jako alternatywne @p var_idx w celu zliczenia stopnia całego wielomianu
+static const int EVALUATE_DEG = -1;
+
 /**
  * @details Implementacja procedury PolyDeg udokumentowanej w pliku poly.h.
  * @param[in] p : wielomian
@@ -424,9 +457,15 @@ poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx)
  */
 poly_exp_t PolyDeg(const Poly *p)
 {
-    return PolyDegBy(p, EVALUATE_DEG);
+    return PolyDegEvaluate(p, EVALUATE_DEG);
 }
 
+/**
+ * Sprawdza równość dwóch jednomianów.
+ * @param[in] a : jednomian
+ * @param[in] b : jednomian
+ * @return `a = b`
+ */
 static bool MonoIsEq(const Mono *a, const Mono *b)
 {
     if (a->exp != b->exp)
@@ -461,6 +500,12 @@ bool PolyIsEq(const Poly *p, const Poly *q)
     return p->abs_term == q->abs_term;
 }
 
+/**
+ * Oblicza w logarytmicznym czasie @f$x^e@f$.
+ * @param[in]  x : liczba do spotęgowania
+ * @param[in]  e : wykładnik docelowej potęgi
+ * @return @f$x^e@f$
+ */
 static poly_coeff_t FastPower(poly_coeff_t x, poly_exp_t e)
 {
     if (e == 0)
