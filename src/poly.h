@@ -3,7 +3,7 @@
 
    @author Jakub Pawlewicz <pan@mimuw.edu.pl>, Michał Balcerzak <mb385130@mimuw.edu.pl>
    @copyright Uniwersytet Warszawski
-   @date 2017-04-24, TODO
+   @date 2017-04-24, 2017-05-13
  */
 
 #ifndef __POLY_H__
@@ -34,13 +34,14 @@ typedef struct Poly
         poly_coeff_t abs_term; ///< wartość wyrazu wolnego
 } Poly;
 
-void PrintPoly(const Poly *p, char x);
 
 /**
  * Struktura przechowująca jednomian
  * Jednomian ma postać `p * x^e`.
  * Współczynnik `p` może też być wielomianem.
  * Będzie on traktowany jako wielomian nad kolejną zmienną (nie nad x).
+ * Jednomian jest elementem uporzadkowanej listy elementów pewnego wielomianu.
+ * Zawiera on wskaźniki na sąsiednie jej elementy.
  */
 typedef struct Mono
 {
@@ -50,20 +51,11 @@ typedef struct Mono
         Mono* next; ///< jednomian o mniejszym wykładniku
 } Mono;
 
-
-static inline Poly* PolyMalloc()
-{
-    Poly* out = (Poly*)malloc(sizeof(Poly));
-    assert(out);
-    return out;
-}
-
-static inline Mono* MonoMalloc()
-{
-    Mono* out = (Mono*)malloc(sizeof(Mono));
-    assert(out);
-    return out;
-}
+/**
+ * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
+ * @param[in] p : wielomian
+ */
+void PrintPoly(const Poly *p);
 
 /**
  * Tworzy wielomian, który jest współczynnikiem.

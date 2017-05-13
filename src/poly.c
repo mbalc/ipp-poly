@@ -1,3 +1,12 @@
+/** @file
+   Implementacja interfejsu klasy wielomianów
+
+   @author Michał Balcerzak <mb385130@mimuw.edu.pl>
+   @copyright Uniwersytet Warszawski
+   @date 2017-05-13
+ */
+
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,7 +14,7 @@
 #include "poly.h"
 
 
-void PrintPoly(const Poly *p, char x)
+void PrintPolyList(const Poly *p, char x)
 {
     if (p->abs_term > 0)
     {
@@ -23,16 +32,28 @@ void PrintPoly(const Poly *p, char x)
         }
         if (PolyIsCoeff(&ptr->p))
         {
-            PrintPoly(&ptr->p, x + 1);
+            PrintPolyList(&ptr->p, x + 1);
         }
         else
         {
             printf("(");
-            PrintPoly(&ptr->p, x + 1);
+            PrintPolyList(&ptr->p, x + 1);
             printf(")");
         }
         printf("%c^%ld", x, ptr->exp);
     }
+}
+
+void PrintPoly(const Poly *p)
+{
+    PrintPolyList(p, 'a');
+}
+
+static inline Mono*MonoMalloc()
+{
+    Mono *out = (Mono*)malloc(sizeof(Mono));
+    assert(out);
+    return out;
 }
 
 static void LinkMonos(Mono *left, Mono *right)
