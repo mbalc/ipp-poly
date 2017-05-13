@@ -178,17 +178,17 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
     {
         out.abs_term = out.last->p.abs_term;
         out.last->p.abs_term = 0;
-        if (PolyIsZero(&out.last->p))
+    }
+    if (PolyIsZero(&out.last->p))
+    {
+        Mono *ptr = out.last->prev;
+        MonoDestroy(out.last);
+        if (ptr != NULL)
         {
-            Mono *ptr = out.last->prev;
-            MonoDestroy(out.last);
-            if (ptr != NULL)
-            {
-                free(out.last);
-            }
-            out.last = ptr;
-            LinkMonos(out.last, NULL);
+            free(out.last);
         }
+        out.last = ptr;
+        LinkMonos(out.last, NULL);
     }
     return out;
 }
@@ -201,7 +201,14 @@ Poly PolyCoeffMul(const Poly *p, poly_coeff_t x)
     {
         buf.exp = p_ptr->exp;
         buf.p = PolyCoeffMul(&p_ptr->p, x);
-        ExtendPoly(&out, buf);
+        if (PolyIsZero(&buf.p))
+        {
+            PolyDestroy(&buf.p);
+        }
+        else
+        {
+            ExtendPoly(&out, buf);
+        }
     }
     return out;
 }
