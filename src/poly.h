@@ -1,18 +1,19 @@
 /** @file
    Interfejs klasy wielomianów
 
-   @author Jakub Pawlewicz <pan@mimuw.edu.pl>, Michał Balcerzak <mb385130@mimuw.edu.pl>
+   @author Jakub Pawlewicz <pan@mimuw.edu.pl>,\n
+   Michał Balcerzak <mb385130@mimuw.edu.pl>
    @copyright Uniwersytet Warszawski
    @date 2017-04-24, 2017-05-13
  */
+
 
 #ifndef __POLY_H__
 #define __POLY_H__
 
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdlib.h>
-#include <assert.h>
+
 
 /** Typ współczynników wielomianu */
 typedef long poly_coeff_t;
@@ -20,19 +21,19 @@ typedef long poly_coeff_t;
 /** Typ wykładników wielomianu */
 typedef long poly_exp_t;
 
-
 typedef struct Mono Mono;
 
 /**
- * Struktura przechowująca wielomian
- * Wielomian ma postać '(m1 + m2 + ... + mn) + b' gdzie m1..mn są jednomianami.
- * Na wielomian składa się uporządkowana lista jednomianów oraz wyraz wolny.
- * Porządek tej listy jest ściśle malejący względem wykładników jednomianów.
- * Pierwszy jednomian listy ma największy wykładnik, ostatni - najmniejszy.
- * Struktura Poly przechowuje jedynie wskaźniki na skrajne elementy tej listy.
- * Wielomian może być wielomianem stałym - wtedy lista jednomianów jest listą pustą.
- * W takim przypadku oba wskaźniki na skrajne elementy listy wskazują na NULL.
- * Wszelkie składniki stałe (niezależne od zmiennych) sa pamiętane w wyrazie wolnym.
+ * Struktura przechowująca wielomian.
+ * Wielomian ma postać @f$(m_1 + m_2 + … + m_n) + b@f$ gdzie @f$m_1…m_n@f$
+ * są jednomianami. Na wielomian składa się uporządkowana lista jednomianów oraz
+ * wyraz wolny. Porządek tej listy jest ściśle malejący względem wykładników
+ * jednomianów. Pierwszy jednomian listy ma największy wykładnik, ostatni -
+ * najmniejszy. Struktura Poly przechowuje jedynie wskaźniki na skrajne elementy
+ * tej listy. Wielomian może być wielomianem stałym - wtedy lista jednomianów
+ * jest listą pustą. W takim przypadku oba wskaźniki na skrajne elementy listy
+ * wskazują na NULL. Wszelkie składniki stałe (niezależne od zmiennych)
+ * są pamiętane w wyrazie wolnym.
  */
 typedef struct Poly
 {
@@ -43,8 +44,8 @@ typedef struct Poly
 
 
 /**
- * Struktura przechowująca jednomian
- * Jednomian ma postać `p * x^e`.
+ * Struktura przechowująca jednomian.
+ * Jednomian ma postać @f$px^e@f$.
  * Współczynnik `p` może też być wielomianem.
  * Będzie on traktowany jako wielomian nad kolejną zmienną (nie nad x).
  * Jednomian jest elementem uporzadkowanej listy elementów pewnego wielomianu.
@@ -59,11 +60,9 @@ typedef struct Mono
     Mono *next; ///< następny element listy (mniejszy wykładnik)
 } Mono;
 
-/**
- * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
- * @param[in] p : wielomian
- */
-void PrintPoly(const Poly *p);
+
+/**@name Konstruktory
+   @{*/
 
 /**
  * Tworzy wielomian stały, który jest współczynnikiem.
@@ -96,44 +95,21 @@ static inline Mono MonoFromPoly(const Poly *p, poly_exp_t e)
     return (Mono) {.p = *p, .exp = e, .prev = NULL, .next = NULL};
 }
 
-/**
- * Sprawdza, czy wielomian jest współczynnikiem.
- * @param[in] p : wielomian
- * @return Czy wielomian jest współczynnikiem?
- */
-static inline bool PolyIsCoeff(const Poly *p)
-{
-    if ((p->first == NULL) != (p->last == NULL))
-    {
-        assert(false);
-    }
-    return (p->first == NULL);
-}
 
 /**
- * Sprawdza, czy wielomian jest tożsamościowo równy zeru.
- * @param[in] p : wielomian
- * @return Czy wielomian jest równy zero?
+ * Sumuje listę jednomianów i tworzy z nich wielomian.
+ * Przejmuje na własność zawartość tablicy @p monos.
+ * @param[in] count : liczba jednomianów
+ * @param[in] monos : tablica jednomianów
+ * @return wielomian będący sumą jednomianów
  */
-static inline bool PolyIsZero(const Poly *p)
-{
-    return (PolyIsCoeff(p) && p->abs_term == 0);
-}
+Poly PolyAddMonos(unsigned count, const Mono monos[]);
 
-/**
- * Usuwa wielomian z pamięci.
- * @param[in] p : wielomian
- */
-void PolyDestroy(Poly *p);
+/*}@**/
 
-/**
- * Usuwa jednomian z pamięci.
- * @param[in] m : jednomian
- */
-static inline void MonoDestroy(Mono *m)
-{
-    PolyDestroy(&m->p);
-}
+
+/**@name Konstruktory kopiujące
+   @{*/
 
 /**
  * Robi pełną, głęboką kopię wielomianu.
@@ -152,6 +128,33 @@ static inline Mono MonoClone(const Mono *m)
     return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp};
 }
 
+/*}@**/
+
+
+/**@name Destruktory
+   @{*/
+
+/**
+ * Usuwa wielomian z pamięci.
+ * @param[in] p : wielomian
+ */
+void PolyDestroy(Poly *p);
+
+/**
+ * Usuwa jednomian z pamięci.
+ * @param[in] m : jednomian
+ */
+static inline void MonoDestroy(Mono *m)
+{
+    PolyDestroy(&m->p);
+}
+
+/*}@**/
+
+
+/**@name Operatory
+   @{*/
+
 /**
  * Dodaje dwa wielomiany.
  * @param[in] p : wielomian
@@ -159,15 +162,6 @@ static inline Mono MonoClone(const Mono *m)
  * @return `p + q`
  */
 Poly PolyAdd(const Poly *p, const Poly *q);
-
-/**
- * Sumuje listę jednomianów i tworzy z nich wielomian.
- * Przejmuje na własność zawartość tablicy @p monos.
- * @param[in] count : liczba jednomianów
- * @param[in] monos : tablica jednomianów
- * @return wielomian będący sumą jednomianów
- */
-Poly PolyAddMonos(unsigned count, const Mono monos[]);
 
 /**
  * Mnoży dwa wielomiany.
@@ -192,6 +186,46 @@ Poly PolyNeg(const Poly *p);
  */
 Poly PolySub(const Poly *p, const Poly *q);
 
+/*}@**/
+
+
+/**@name Komparatory
+   @{*/
+
+/**
+ * Sprawdza, czy wielomian jest współczynnikiem.
+ * @param[in] p : wielomian
+ * @return Czy wielomian jest współczynnikiem?
+ */
+static inline bool PolyIsCoeff(const Poly *p)
+{
+    return (p->first == NULL);
+}
+
+/**
+ * Sprawdza, czy wielomian jest tożsamościowo równy zeru.
+ * @param[in] p : wielomian
+ * @return Czy wielomian jest równy zero?
+ */
+static inline bool PolyIsZero(const Poly *p)
+{
+    return (PolyIsCoeff(p) && p->abs_term == 0);
+}
+
+/**
+ * Sprawdza równość dwóch wielomianów.
+ * @param[in] p : wielomian
+ * @param[in] q : wielomian
+ * @return `p = q`
+ */
+bool PolyIsEq(const Poly *p, const Poly *q);
+
+/*}@**/
+
+
+/**@name Funkcje obliczeniowe
+   @{*/
+
 /**
  * Zwraca stopień wielomianu ze względu na zadaną zmienną (-1 dla wielomianu
  * tożsamościowo równego zeru).
@@ -213,24 +247,31 @@ poly_exp_t PolyDegBy(const Poly *p, unsigned var_idx);
 poly_exp_t PolyDeg(const Poly *p);
 
 /**
- * Sprawdza równość dwóch wielomianów.
- * @param[in] p : wielomian
- * @param[in] q : wielomian
- * @return `p = q`
- */
-bool PolyIsEq(const Poly *p, const Poly *q);
-
-/**
  * Wylicza wartość wielomianu w punkcie @p x.
  * Wstawia pod pierwszą zmienną wielomianu wartość @p x.
  * W wyniku może powstać wielomian, jeśli współczynniki są wielomianem
  * i zmniejszane są indeksy zmiennych w takim wielomianie o jeden.
  * Formalnie dla wielomianu @f$p(x_0, x_1, x_2, \ldots)@f$ wynikiem jest
  * wielomian @f$p(x, x_0, x_1, \ldots)@f$.
- * @param[in] p
- * @param[in] x
+ * @param[in] p : wielomian
+ * @param[in] x : wartość pierwszej ze zmiennych
  * @return @f$p(x, x_0, x_1, \ldots)@f$
  */
 Poly PolyAt(const Poly *p, poly_coeff_t x);
+
+/*}@**/
+
+
+/**@name Funkcje pomocnicze
+   @{*/
+
+/**
+ * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
+ * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu łacińskiego.
+ * @param[in] p : wielomian
+ */
+void PrintPoly(const Poly *p);
+
+/*}@**/
 
 #endif /* __POLY_H__ */
