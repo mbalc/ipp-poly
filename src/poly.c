@@ -259,34 +259,31 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
             assert(false);
         }
     }
-    if (!PolyIsZero(&buf.p))
-    {
-        PolyAppendMono(&out, buf);
-
-        if (out.last->exp == 0)
-        {
-            out.abs_term = out.last->p.abs_term;
-            out.last->p.abs_term = 0;
-        }
-//gdy właśnie wyzerowaliśmy najmniejszy z jednomianów
-        if (PolyIsZero(&out.last->p))
-        {
-            Mono *ptr = out.last->prev;
-            MonoDestroy(out.last);
-            if (ptr != NULL)
-            {
-                free(out.last);
-            }
-            out.last = ptr;
-            if (out.last == NULL)
-            {
-                out.first = NULL;
-            }
-            LinkMonos(out.last, NULL);
-        }
-    }
+ 
+    PolyAppendMono(&out, buf);
     free(arr);
-    return out;
+  
+
+    if (out.last->exp == 0)
+    {
+        out.abs_term = out.last->p.abs_term;
+        out.last->p.abs_term = 0;
+    }
+//gdy właśnie wyzerowaliśmy najmniejszy z jednomianów
+    if (PolyIsZero(&out.last->p))
+    {
+        Mono *ptr = out.last->prev;
+        MonoDestroy(out.last);
+        free(out.last);
+        out.last = ptr;
+        if (out.last == NULL)
+        {
+            out.first = NULL;
+        }
+        LinkMonos(out.last, NULL);
+    }
+    
+   return out;
 }
 
 /**
