@@ -1,4 +1,8 @@
-typedef struct PointerStack PointerStack;
+typedef struct PointerStack
+{
+    void *elem_pointer;
+    struct PointerStack *next_elem;
+} PointerStack;
 
 PointerStack NewPointerStack();
 
