@@ -18,9 +18,44 @@ void ReadCharacter()
     global_pcalc_read_buffer = getchar();
 }
 
+void ReadUntilNewline()
+{
+    while (global_pcalc_read_buffer != '\n'
+           && global_pcalc_read_buffer != 0)
+    {
+        ReadCharacter();
+    }
+    global_pcalc_line_number += 1;
+    global_pcalc_column_number = 1;
+}
+
+
+int ParseInt()
+{
+    int out = 0;
+    bool negative = (global_pcalc_read_buffer == '-');
+    if (negative)
+    {
+        ReadCharacter();
+    }
+    while ('0' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= '9')
+    {
+        out *= 10;
+        out += (negative ? -1 : 1) * (global_pcalc_read_buffer - '0');
+        ReadCharacter();
+    }
+    return out;
+}
+
 bool ParseCommand()
 {
-    return false;
+    return false; //not implemented yet
+}
+
+bool ParsePoly()
+{
+    printf("%d\n", ParseInt());
+    return false; //not implemented yet
 }
 
 
@@ -33,16 +68,16 @@ void ParseLine()
         if (!ParseCommand())
         {
             printf("ERROR\n");
-            while (global_pcalc_read_buffer != '\n'
-                   && global_pcalc_read_buffer != 0)
-            {
-                ReadCharacter();
-            }
+            ReadUntilNewline();
         }
     }
     else
     {
-        printf("Blasfd");
+        if (!ParsePoly())
+        {
+            printf("PolyParseError\n");
+            ReadUntilNewline();
+        }
     }
 }
 
