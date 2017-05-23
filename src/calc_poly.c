@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 #include "poly.h"
 #include "stack.h"
 
@@ -9,9 +10,26 @@ PointerStack global_pcalc_poly_stack;
 unsigned global_pcalc_line_number;
 unsigned global_pcalc_column_number;
 
+void MonoStackDestroy(PointerStack *mono_stack)
+{
+    while (mono_stack->next_elem != NULL)
+    {
+        MonoDestroy(mono_stack->elem_pointer);
+        PopStack(mono_stack);
+    }
+    free(mono_stack);
+}
+
+
 bool BufferIsNumber()
 {
-    return '0' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= '9';
+    return ('0' <= global_pcalc_read_buffer) &&
+           (global_pcalc_read_buffer <= '9');
+}
+
+bool BufferIsEndline()
+{
+    return global_pcalc_read_buffer == '\n';
 }
 
 void ReadCharacter()
@@ -90,20 +108,88 @@ bool ParseNumber(long lower_limit, long upper_limit, void *output)
     return true;
 }
 
+bool ParseCoeff(poly_coeff_t *out)
+{
+    return ParseNumber(LONG_MIN, LONG_MAX, out);
+}
+
+bool ParseExp(poly_exp_t *out)
+{
+    return ParseNumber(0, INT_MAX, out);
+}
+
 bool ParseCommand()
 {
-    return false; //not implemented yet
+    char command[20];
+    command[0] = global_pcalc_read_buffer;
+    scanf("%s", command + 1);
+    if (strcmp(command, "PRINT"))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool ParsePoly(Poly *output);
+
+bool ParseMono(Mono *output)
+{
+    Poly poly_coeff;
+    if (!ParsePoly(&poly_coeff))
+    {
+        return false;
+    }
+    if (global_pcalc_read_buffer != ',')
+    {
+        return false;
+    }
+    ReadCharacter();
+    poly_exp_t e;
+    if (!ParseExp(&e))
+    {
+        return false;
+    }
+    if (global_pcalc_read_buffer != ')')
+    {
+        return false;
+    }
+    ReadCharacter();
+    *output = MonoFromPoly(&poly_coeff, e);
+    return true;
 }
 
 bool ParsePoly(Poly *output)
 {
     if (global_pcalc_read_buffer == '(')
     {
-        ReadCharacter();
-        ParseMono();
+        PointerStack mono_stack = NewPointerStack();
+        do
+        {
+            Mono *new_mono = malloc(sizeof(Mono));
+            ReadCharacter();
+            if (!ParseMono(new_mono))
+            {
+                return false;
+            }
+            PushOntoStack(new_mono, &mono_stack);
+        } while (global_pcalc_read_buffer == '+');
+
     }
-    printf("%ld\n", ParseNumber(0, LONG_MAX));
-    return false; //not implemented yet
+    else if (BufferIsNumber())
+    {
+        poly_coeff_t coeff;
+        if (ParseCoeff(&coeff))
+        {
+            return false;
+        }
+        *output = PolyFromCoeff(coeff);
+
+    }
+    else
+    {
+        return false;
+    }
+    return true;
 }
 
 
@@ -121,11 +207,13 @@ void ParseLine()
     }
     else
     {
-        if (!ParsePoly())
+        Poly *new_poly = malloc(sizeof(Poly));
+        if (!ParsePoly(new_poly))
         {
             printf("PolyParseError\n");
             ReadUntilNewline();
         }
+        PushOntoStack(new_poly, &global_pcalc_poly_stack);
     }
 }
 
