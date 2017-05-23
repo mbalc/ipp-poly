@@ -40,6 +40,10 @@ void ReadCharacter()
         global_pcalc_line_number += 1;
         global_pcalc_column_number = 1;
     }
+    else
+    {
+        global_pcalc_column_number += 1;
+    }
     global_pcalc_read_buffer = getchar();
 }
 
@@ -50,13 +54,10 @@ void ReadUntilNewline()
     {
         ReadCharacter();
     }
-    global_pcalc_line_number += 1;
-    global_pcalc_column_number = 1;
 }
 
 bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
-    printf("tryina add %ld to %ld (%ld)\n", *a, b, lower_limit);
     if (*a > 0)
     {
         if (upper_limit - *a < b)
@@ -203,11 +204,11 @@ bool ParsePoly(Poly *output)
                 ReadCharacter();
             }
         }
-        if (global_pcalc_read_buffer != '\n')
-        {
-            ReadUntilNewline();
-            return false;
-        }
+        // if (global_pcalc_read_buffer != '\n')
+        // {
+        //     ReadUntilNewline();
+        //     return false;
+        // }
         printf("hehe sajz %d\n", mono_stack.size);
         unsigned monos_size = mono_stack.size;
         Mono monos[monos_size];
@@ -256,7 +257,8 @@ void ParseLine()
         Poly *new_poly = malloc(sizeof(Poly));
         if (!ParsePoly(new_poly))
         {
-            printf("PolyParseError\n");
+            printf("ERROR %d %d\n", global_pcalc_line_number,
+                   global_pcalc_column_number);
             ReadUntilNewline();
         }
         PushOntoStack(new_poly, &global_pcalc_poly_stack);
