@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include "poly.h"
 #include "stack.h"
 
@@ -29,10 +30,38 @@ void ReadUntilNewline()
     global_pcalc_column_number = 1;
 }
 
-
-int ParseInt()
+bool AddNumbers(long lower_limit, long upper_limit, long a, long b)
 {
-    int out = 0;
+    printf("tryina add %ld to %ld\n", a, b);
+    if (upper_limit - a < b)
+    {
+        return false;
+    }
+    if (a - lower_limit < -b)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool MultiplyByTen(long lower_limit, long upper_limit, long a)
+{
+    long b = a;
+    for (int i = 2; i < 16; i = i + i)
+    {
+        if (!AddNumbers(lower_limit, upper_limit, b, b))
+        {
+            return false;
+        }
+        b = b + b; //b = i * a
+    }
+    return AddNumbers(lower_limit, upper_limit, b, 2 * a);
+}
+
+
+long ParseNumber(long lower_limit, long upper_limit)
+{
+    long out = 0;
     bool negative = (global_pcalc_read_buffer == '-');
     if (negative)
     {
@@ -40,8 +69,23 @@ int ParseInt()
     }
     while ('0' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= '9')
     {
-        out *= 10;
-        out += (negative ? -1 : 1) * (global_pcalc_read_buffer - '0');
+        if (MultiplyByTen(lower_limit, upper_limit, out))
+        {
+            out *= 10;
+        }
+        else
+        {
+            return -1;
+        }
+        if (AddNumbers(lower_limit, upper_limit, out,
+                       (negative ? -1 : 1) * (global_pcalc_read_buffer - '0')))
+        {
+            out += (negative ? -1 : 1) * (global_pcalc_read_buffer - '0');
+        }
+        else
+        {
+            return -1;
+        }
         ReadCharacter();
     }
     return out;
@@ -54,7 +98,7 @@ bool ParseCommand()
 
 bool ParsePoly()
 {
-    printf("%d\n", ParseInt());
+    printf("%ld\n", ParseNumber(0, LONG_MAX));
     return false; //not implemented yet
 }
 
