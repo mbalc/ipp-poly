@@ -5,11 +5,12 @@ typedef struct PointerStack
 {
     void *elem_pointer;
     struct PointerStack *next_elem;
+    unsigned size;
 } PointerStack;
 
 PointerStack NewPointerStack()
 {
-    return (PointerStack) {.elem_pointer = NULL, .next_elem = NULL};
+    return (PointerStack) {.elem_pointer = NULL, .next_elem = NULL, .size = 0};
 }
 
 void PushOntoStack(void *new_element, PointerStack *stack)
@@ -18,6 +19,7 @@ void PushOntoStack(void *new_element, PointerStack *stack)
     *memory = *stack;
     stack->next_elem = memory;
     stack->elem_pointer = new_element;
+    stack->size = memory->size + 1;
 }
 
 void* GetStackTop(PointerStack *stack)

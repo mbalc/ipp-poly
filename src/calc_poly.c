@@ -9,6 +9,11 @@ PointerStack global_pcalc_poly_stack;
 unsigned global_pcalc_line_number;
 unsigned global_pcalc_column_number;
 
+bool BufferIsNumber()
+{
+    return '0' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= '9';
+}
+
 void ReadCharacter()
 {
     if (global_pcalc_read_buffer == '\n')
@@ -30,65 +35,59 @@ void ReadUntilNewline()
     global_pcalc_column_number = 1;
 }
 
-bool AddNumbers(long lower_limit, long upper_limit, long a, long b)
+bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
-    printf("tryina add %ld to %ld\n", a, b);
-    if (upper_limit - a < b)
+    printf("tryina add %ld to %ld\n", *a, b);
+    if (upper_limit - *a < b)
     {
         return false;
     }
-    if (a - lower_limit < -b)
+    if (*a - lower_limit < -b)
     {
         return false;
     }
+    *a = *a + b;
     return true;
 }
 
-bool MultiplyByTen(long lower_limit, long upper_limit, long a)
+bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
 {
-    long b = a;
     for (int i = 2; i < 16; i = i + i)
     {
-        if (!AddNumbers(lower_limit, upper_limit, b, b))
+        if (!AddNumbers(lower_limit, upper_limit, a, *a))
         {
             return false;
         }
-        b = b + b; //b = i * a
+        //a = i * a
     }
-    return AddNumbers(lower_limit, upper_limit, b, 2 * a);
+    //a = 8 * a;
+    return AddNumbers(lower_limit, upper_limit, a, *a / 4);
 }
 
 
-long ParseNumber(long lower_limit, long upper_limit)
+bool ParseNumber(long lower_limit, long upper_limit, void *output)
 {
-    long out = 0;
+    long *out = (long*)output;
+    *out = 0;
     bool negative = (global_pcalc_read_buffer == '-');
     if (negative)
     {
         ReadCharacter();
     }
-    while ('0' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= '9')
+    while (BufferIsNumber())
     {
-        if (MultiplyByTen(lower_limit, upper_limit, out))
+        if (!MultiplyByTen(lower_limit, upper_limit, out))
         {
-            out *= 10;
+            return false;
         }
-        else
+        if (!AddNumbers(lower_limit, upper_limit, out,
+                        (negative ? -1 : 1) * (global_pcalc_read_buffer - '0')))
         {
-            return -1;
-        }
-        if (AddNumbers(lower_limit, upper_limit, out,
-                       (negative ? -1 : 1) * (global_pcalc_read_buffer - '0')))
-        {
-            out += (negative ? -1 : 1) * (global_pcalc_read_buffer - '0');
-        }
-        else
-        {
-            return -1;
+            return false;
         }
         ReadCharacter();
     }
-    return out;
+    return true;
 }
 
 bool ParseCommand()
@@ -96,8 +95,13 @@ bool ParseCommand()
     return false; //not implemented yet
 }
 
-bool ParsePoly()
+bool ParsePoly(Poly *output)
 {
+    if (global_pcalc_read_buffer == '(')
+    {
+        ReadCharacter();
+        ParseMono();
+    }
     printf("%ld\n", ParseNumber(0, LONG_MAX));
     return false; //not implemented yet
 }

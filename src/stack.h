@@ -2,6 +2,7 @@ typedef struct PointerStack
 {
     void *elem_pointer;
     struct PointerStack *next_elem;
+    unsigned size;
 } PointerStack;
 
 PointerStack NewPointerStack();
