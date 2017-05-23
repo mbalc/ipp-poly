@@ -147,8 +147,9 @@ bool ParseCommand()
     scanf("%s", command + 1);
     printf("%s -<<\n", command);
     ReadCharacter();
-    if (strcmp(command, "PRINT"))
+    if (strcmp(command, "PRINT") == 0)
     {
+        PrintPoly(GetStackTop(&global_pcalc_poly_stack));
         return true;
     }
     return false;
@@ -187,7 +188,7 @@ bool ParsePoly(Poly *output)
     if (global_pcalc_read_buffer == '(')
     {
         PointerStack mono_stack = NewPointerStack();
-        do
+        while (global_pcalc_read_buffer == '(')
         {
             Mono *new_mono = malloc(sizeof(Mono));
             ReadCharacter();
@@ -196,13 +197,33 @@ bool ParsePoly(Poly *output)
                 return false;
             }
             PushOntoStack(new_mono, &mono_stack);
-        } while (global_pcalc_read_buffer == '+');
+            printf("buffer == %c\n", global_pcalc_read_buffer);
+            if (global_pcalc_read_buffer == '+')
+            {
+                ReadCharacter();
+            }
+        }
+        if (global_pcalc_read_buffer != '\n')
+        {
+            ReadUntilNewline();
+            return false;
+        }
+        printf("hehe sajz %d\n", mono_stack.size);
+        unsigned monos_size = mono_stack.size;
+        Mono monos[monos_size];
+        for (unsigned i = 0; i < monos_size; ++i)
+        {
+            monos[i] = *(Mono*)GetStackTop(&mono_stack);
+            PopStack(&mono_stack);
+        }
+        *output = PolyAddMonos(monos_size, monos);
+        PrintPoly(output);
 
     }
     else if (BufferIsNumber())
     {
         poly_coeff_t coeff;
-        if (ParseCoeff(&coeff))
+        if (!ParseCoeff(&coeff))
         {
             return false;
         }
