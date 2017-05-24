@@ -4,11 +4,11 @@
 #include "poly.h"
 #include "stack.h"
 
-char global_pcalc_read_buffer;
-PointerStack global_pcalc_poly_stack;
+static char global_pcalc_read_buffer;
+static PointerStack global_pcalc_poly_stack;
 
-unsigned global_pcalc_line_number;
-unsigned global_pcalc_column_number;
+static unsigned global_pcalc_line_number;
+static unsigned global_pcalc_column_number;
 
 void MonoStackDestroy(PointerStack *mono_stack)
 {
@@ -54,6 +54,40 @@ void ReadUntilNewline()
     {
         ReadCharacter();
     }
+}
+
+void PrintExpressionResult(bool expression)
+{
+    if (expression)
+    {
+        printf("1\n");
+    }
+    else
+    {
+        printf("0\n");
+    }
+}
+
+bool ThrowStackUnderflow()
+{
+    printf("ERROR %d STACK UNDERFLOW\n", global_pcalc_line_number);
+    return false;
+}
+
+void StackTopIsZero()
+{
+    PrintExpressionResult(PolyIsZero(GetStackTop(&global_pcalc_poly_stack)));
+}
+
+void StackTopIsCoeff()
+{
+    PrintExpressionResult(PolyIsCoeff(GetStackTop(&global_pcalc_poly_stack)));
+}
+
+void StackTopClone()
+{
+    Poly new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
+    PushOntoStack(&new_poly, &global_pcalc_poly_stack);
 }
 
 bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
@@ -141,17 +175,67 @@ bool ParseExp(poly_exp_t *out)
     return ParseNumber(0, INT_MAX, out);
 }
 
+bool ExecuteOnPolyStack(void (*procedure)())
+{
+    if (HasStackTop(&global_pcalc_poly_stack))
+    {
+        procedure();
+        return true;
+    }
+    else
+    {
+        return ThrowStackUnderflow();
+    }
+}
+
 bool ParseCommand()
 {
-    char command[20];
+    static unsigned max_command_length = 20;
+    char command[max_command_length];
     command[0] = global_pcalc_read_buffer;
     scanf("%s", command + 1);
     printf("%s -<<\n", command);
     ReadCharacter();
-    if (strcmp(command, "PRINT") == 0)
+    printf("(%c) - buffer\n", global_pcalc_read_buffer);
+    if (global_pcalc_read_buffer == '\n')
     {
-        PrintPoly(GetStackTop(&global_pcalc_poly_stack));
+        if (strcmp(command, "ZERO") == 0)
+        {
+            Poly new_poly = PolyZero();
+            PushOntoStack(&new_poly, &global_pcalc_poly_stack);
+        }
+        else if (strcmp(command, "IS_COEFF") == 0)
+        {
+            return ExecuteOnPolyStack(StackTopIsCoeff);
+        }
+        else if (strcmp(command, "IS_ZERO") == 0)
+        {
+            return ExecuteOnPolyStack(StackTopIsZero);
+        }
+        else if (strcmp(command, "CLONE") == 0)
+        {
+            return ExecuteOnPolyStack(StackTopClone);
+        }
+        else if (strcmp(command, "PRINT") == 0)
+        {
+            if (HasStackTop(&global_pcalc_poly_stack))
+            {
+                PrintPoly(GetStackTop(&global_pcalc_poly_stack));
+            }
+            else
+            {
+                return ThrowStackUnderflow();
+            }
+        }
+        else
+        {
+            return false;
+        }
         return true;
+    }
+    if (global_pcalc_read_buffer == ' ')
+    {
+
     }
     return false;
 }
@@ -204,11 +288,6 @@ bool ParsePoly(Poly *output)
                 ReadCharacter();
             }
         }
-        // if (global_pcalc_read_buffer != '\n')
-        // {
-        //     ReadUntilNewline();
-        //     return false;
-        // }
         printf("hehe sajz %d\n", mono_stack.size);
         unsigned monos_size = mono_stack.size;
         Mono monos[monos_size];
