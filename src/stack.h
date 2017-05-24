@@ -20,6 +20,8 @@ bool HasStackTop(PointerStack *stack);
 
 void* GetStackTop(PointerStack *stack);
 
+void* PollStackTop(PointerStack *stack);
+
 void PopStack(PointerStack *stack);
 
 #endif /* __STACK_H__ */

@@ -24,6 +24,13 @@ void* GetStackTop(PointerStack *stack)
     return stack->elem_pointer;
 }
 
+void* PollStackTop(PointerStack *stack)
+{
+    void *ptr = GetStackTop(stack);
+    PopStack(stack);
+    return ptr;
+}
+
 void PopStack(PointerStack *stack)
 {
     PointerStack *memory = stack->next_elem;
