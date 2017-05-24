@@ -1,12 +1,4 @@
-#include <stdlib.h>
-
-
-typedef struct PointerStack
-{
-    void *elem_pointer;
-    struct PointerStack *next_elem;
-    unsigned size;
-} PointerStack;
+#include "stack.h"
 
 PointerStack NewPointerStack()
 {
@@ -20,6 +12,11 @@ void PushOntoStack(void *new_element, PointerStack *stack)
     stack->next_elem = memory;
     stack->elem_pointer = new_element;
     stack->size = memory->size + 1;
+}
+
+bool HasStackTop(PointerStack *stack)
+{
+    return stack->elem_pointer != NULL;
 }
 
 void* GetStackTop(PointerStack *stack)
