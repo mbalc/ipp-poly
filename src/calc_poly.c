@@ -56,16 +56,9 @@ void ReadUntilNewline()
     }
 }
 
-void PrintExpressionResult(bool expression)
+void PrintExpressionResult(int expression)
 {
-    if (expression)
-    {
-        printf("1\n");
-    }
-    else
-    {
-        printf("0\n");
-    }
+    printf("%d\n", expression);
 }
 
 bool ThrowStackUnderflow()
@@ -84,11 +77,77 @@ void StackTopIsCoeff()
     PrintExpressionResult(PolyIsCoeff(GetStackTop(&global_pcalc_poly_stack)));
 }
 
+void StackTopDeg()
+{
+    PrintExpressionResult(PolyDeg(GetStackTop(&global_pcalc_poly_stack)));
+}
+
+void StackTopDegBy(unsigned idx)
+{
+    PrintExpressionResult(PolyDegBy(GetStackTop(&global_pcalc_poly_stack), idx));
+}
+
+void StackTopPrint()
+{
+    PrintPoly(GetStackTop(&global_pcalc_poly_stack));
+}
+
+void StackTopInsertZero()
+{
+    Poly new_poly = PolyZero();
+    PushOntoStack(&new_poly, &global_pcalc_poly_stack);
+}
+
 void StackTopClone()
 {
     Poly new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
     PushOntoStack(&new_poly, &global_pcalc_poly_stack);
 }
+
+void StackTopPop()
+{
+    PopStack(&global_pcalc_poly_stack);
+}
+
+void StackTopNeg()
+{
+
+}
+
+void StackTopIsEq()
+{
+    Poly *a = PollStackTop(&global_pcalc_poly_stack);
+    Poly *b = GetStackTop(&global_pcalc_poly_stack);
+    PushOntoStack(a, &global_pcalc_poly_stack);
+    PrintExpressionResult(PolyIsEq(a, b));
+}
+
+void PushBinaryPolyOperationResultOntoStack
+    (Poly (*operation)(const Poly *a, const Poly *b))
+{
+    Poly *a = PollStackTop(&global_pcalc_poly_stack);
+    Poly *b = PollStackTop(&global_pcalc_poly_stack);
+    Poly res = operation(a, b);
+    PushOntoStack(&res, &global_pcalc_poly_stack);
+    PolyDestroy(a);
+    PolyDestroy(b);
+}
+
+void StackTopAdd()
+{
+    PushBinaryPolyOperationResultOntoStack(PolyAdd);
+}
+
+void StackTopMul()
+{
+    PushBinaryPolyOperationResultOntoStack(PolyMul);
+}
+
+void StackTopSub()
+{
+    PushBinaryPolyOperationResultOntoStack(PolySub);
+}
+
 
 bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
@@ -175,9 +234,9 @@ bool ParseExp(poly_exp_t *out)
     return ParseNumber(0, INT_MAX, out);
 }
 
-bool ExecuteOnPolyStack(void (*procedure)())
+bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
 {
-    if (HasStackTop(&global_pcalc_poly_stack))
+    if (global_pcalc_poly_stack.size >= size_requirement)
     {
         procedure();
         return true;
@@ -199,33 +258,33 @@ bool ParseCommand()
     printf("(%c) - buffer\n", global_pcalc_read_buffer);
     if (global_pcalc_read_buffer == '\n')
     {
-        if (strcmp(command, "ZERO") == 0)
+        if (strcmp(command, "DEG") == 0)
         {
-            Poly new_poly = PolyZero();
-            PushOntoStack(&new_poly, &global_pcalc_poly_stack);
+            return ExecuteOnPolyStack(1, StackTopDeg);
         }
-        else if (strcmp(command, "IS_COEFF") == 0)
+        if (strcmp(command, "IS_COEFF") == 0)
         {
-            return ExecuteOnPolyStack(StackTopIsCoeff);
+            return ExecuteOnPolyStack(1, StackTopIsCoeff);
         }
         else if (strcmp(command, "IS_ZERO") == 0)
         {
-            return ExecuteOnPolyStack(StackTopIsZero);
-        }
-        else if (strcmp(command, "CLONE") == 0)
-        {
-            return ExecuteOnPolyStack(StackTopClone);
+            return ExecuteOnPolyStack(1, StackTopIsZero);
         }
         else if (strcmp(command, "PRINT") == 0)
         {
-            if (HasStackTop(&global_pcalc_poly_stack))
-            {
-                PrintPoly(GetStackTop(&global_pcalc_poly_stack));
-            }
-            else
-            {
-                return ThrowStackUnderflow();
-            }
+            return ExecuteOnPolyStack(1, StackTopPrint);
+        }
+        else if (strcmp(command, "ZERO") == 0)
+        {
+            return ExecuteOnPolyStack(0, StackTopInsertZero);
+        }
+        else if (strcmp(command, "CLONE") == 0)
+        {
+            return ExecuteOnPolyStack(1, StackTopClone);
+        }
+        else if (strcmp(command, "POP") == 0)
+        {
+            return ExecuteOnPolyStack(1, StackTopPop);
         }
         else
         {
