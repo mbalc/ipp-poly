@@ -210,16 +210,15 @@ bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
     {
         if (upper_limit - *a < b)
         {
-            printf("upperlimit\n");
+            printf("upperlimit hit\n");
             return false;
         }
     }
     if (*a < 0)
     {
-        printf("%ld < %ld\n", *a - lower_limit, -b);
         if (b < lower_limit - *a)
         {
-            printf("lowerlimit\n");
+            printf("lowerlimit hit\n");
             return false;
         }
     }
@@ -242,7 +241,7 @@ bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
 }
 
 
-bool ParseNumber(long lower_limit, long upper_limit, void *output)
+bool ParseNumber(long lower_limit, long upper_limit, long *output)
 {
     long out = 0;
     bool negative = (global_pcalc_read_buffer == '-');
@@ -263,19 +262,7 @@ bool ParseNumber(long lower_limit, long upper_limit, void *output)
         }
         ReadCharacter();
     }
-    if (negative)
-    {
-        if (out == LONG_MAX)
-        {
-            return false;
-        }
-        if (-out < lower_limit)
-        {
-            return false;
-        }
-        out = -out;
-    }
-    *(long*)output = out;
+    *output = out;
     return true;
 }
 
@@ -285,6 +272,7 @@ bool ParseCoeff(poly_coeff_t *out)
     if (ParseNumber(LONG_MIN, LONG_MAX, &parser_output))
     {
         *out = parser_output;
+        printf("parsed coeff %ld\n", parser_output);
         return true;
     }
     return false;
