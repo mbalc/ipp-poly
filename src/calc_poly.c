@@ -16,9 +16,9 @@ void MonoStackDestroy(PointerStack *mono_stack)
     while (mono_stack->next_elem != NULL)
     {
         MonoDestroy(mono_stack->elem_pointer);
+        free(mono_stack->elem_pointer);
         PopStack(mono_stack);
     }
-    free(mono_stack);
 }
 
 void PolyStackDestroy(PointerStack *poly_stack)
@@ -26,6 +26,7 @@ void PolyStackDestroy(PointerStack *poly_stack)
     while (poly_stack->next_elem != NULL)
     {
         PolyDestroy(poly_stack->elem_pointer);
+        free(poly_stack->elem_pointer);
         PopStack(poly_stack);
     }
 }
@@ -139,13 +140,15 @@ void StackTopPrint()
 
 void StackTopInsertZero()
 {
-    Poly new_poly = PolyZero();
+    Poly *new_poly = malloc(sizeof(Poly));
+    *new_poly = PolyZero();
     PushOntoStack(&new_poly, &global_pcalc_poly_stack);
 }
 
 void StackTopClone()
 {
-    Poly new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
+    Poly *new_poly = malloc(sizeof(Poly));
+    *new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
     PushOntoStack(&new_poly, &global_pcalc_poly_stack);
 }
 
@@ -157,9 +160,10 @@ void StackTopPop()
 void StackTopNeg()
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
-    Poly b = PolyNeg(a);
+    Poly *b = malloc(sizeof(Poly));
+    *b = PolyNeg(a);
     PolyDestroy(a);
-    PushOntoStack(&b, &global_pcalc_poly_stack);
+    PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
 void StackTopIsEq()
@@ -175,10 +179,13 @@ void PushBinaryPolyOperationResultOntoStack
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = PollStackTop(&global_pcalc_poly_stack);
-    Poly res = operation(a, b);
-    PushOntoStack(&res, &global_pcalc_poly_stack);
+    Poly *res = malloc(sizeof(Poly));
+    *res = operation(a, b);
+    PushOntoStack(res, &global_pcalc_poly_stack);
     PolyDestroy(a);
+    free(a);
     PolyDestroy(b);
+    free(b);
 }
 
 void StackTopAdd()
@@ -274,12 +281,24 @@ bool ParseNumber(long lower_limit, long upper_limit, void *output)
 
 bool ParseCoeff(poly_coeff_t *out)
 {
-    return ParseNumber(LONG_MIN, LONG_MAX, out);
+    long parser_output;
+    if (ParseNumber(LONG_MIN, LONG_MAX, &parser_output))
+    {
+        *out = parser_output;
+        return true;
+    }
+    return false;
 }
 
 bool ParseExp(poly_exp_t *out)
 {
-    return ParseNumber(0, INT_MAX, out);
+    long parser_output;
+    if (ParseNumber(0, INT_MAX, &parser_output))
+    {
+        *out = parser_output;
+        return true;
+    }
+    return false;
 }
 
 bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
@@ -381,8 +400,8 @@ bool ParsePoly(Poly *output);
 
 bool ParseMono(Mono *output)
 {
-    Poly poly_coeff;
-    if (!ParsePoly(&poly_coeff))
+    Poly *poly_coeff = malloc(sizeof(Poly));
+    if (!ParsePoly(poly_coeff))
     {
         return false;
     }
@@ -401,7 +420,8 @@ bool ParseMono(Mono *output)
         return false;
     }
     ReadCharacter();
-    *output = MonoFromPoly(&poly_coeff, e);
+    *output = MonoFromPoly(poly_coeff, e);
+    free(poly_coeff);
     return true;
 }
 
@@ -426,12 +446,12 @@ bool ParsePoly(Poly *output)
         }
         unsigned monos_size = mono_stack.size;
         Mono monos[monos_size];
-        for (unsigned i = 0; i < monos_size; ++i)
+        for (PointerStack *ptr = &mono_stack; ptr->next_elem != NULL;
+             ptr = ptr->next_elem)
         {
-            monos[i] = MonoClone((Mono*)GetStackTop(&mono_stack));
-            MonoDestroy(GetStackTop(&mono_stack));
-            PopStack(&mono_stack);
+            monos[ptr->size - 1] = MonoClone(GetStackTop(ptr));
         }
+        MonoStackDestroy(&mono_stack);
         *output = PolyAddMonos(monos_size, monos);
     }
     else if (BufferIsNumber())
@@ -469,7 +489,7 @@ void ParseLine()
     else
     {
         Poly *new_poly = malloc(sizeof(Poly));
-        if (!ParsePoly(new_poly))
+        if (!ParsePoly(new_poly) || !BufferIsEndline())
         {
             free(new_poly);
             ThrowParsePolyError();
