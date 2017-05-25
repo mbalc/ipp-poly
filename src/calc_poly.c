@@ -148,7 +148,7 @@ void StackTopClone()
 {
     Poly *new_poly = malloc(sizeof(Poly));
     *new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
-    PushOntoStack(&new_poly, &global_pcalc_poly_stack);
+    PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
 
 void StackTopPop()
@@ -202,6 +202,14 @@ void StackTopSub()
     PushBinaryPolyOperationResultOntoStack(PolySub);
 }
 
+void StackTopAt(poly_coeff_t x)
+{
+    Poly *a = PollStackTop(&global_pcalc_poly_stack);
+    Poly *b = malloc(sizeof(Poly));
+    *b = PolyAt(a, x);
+    PolyDestroy(a);
+    PushOntoStack(b, &global_pcalc_poly_stack);
+}
 
 bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
@@ -343,7 +351,7 @@ bool ParseCommand()
         }
         else if (strcmp(command, "IS_EQ") == 0)
         {
-            return ExecuteOnPolyStack(1, StackTopIsEq);
+            return ExecuteOnPolyStack(2, StackTopIsEq);
         }
         else if (strcmp(command, "ADD") == 0)
         {
@@ -368,11 +376,46 @@ bool ParseCommand()
         ReadCharacter();
         if (strcmp(command, "AT") == 0)
         {
-            return ExecuteOnPolyStack(2, StackTopMul);
+            poly_coeff_t arg;
+            if (!ParseCoeff(&arg))
+            {
+                return ThrowParseAtArgError();
+            }
+            if (global_pcalc_read_buffer != '\n')
+            {
+                return ThrowParseAtArgError();
+            }
+            if (global_pcalc_poly_stack.size >= 1)
+            {
+                StackTopAt(arg);
+                return true;
+            }
+            else
+            {
+                return ThrowStackUnderflow();
+            }
         }
         else if (strcmp(command, "DEG_BY") == 0)
         {
-            return ExecuteOnPolyStack(2, StackTopMul);
+            long arg;
+            if (!ParseNumber(0, UINT_MAX,&arg))
+            {
+                return ThrowParseDegByArgError();
+            }
+            if (global_pcalc_read_buffer != '\n')
+            {
+                return ThrowParseAtArgError();
+            }
+            unsigned idx = arg;
+            if (global_pcalc_poly_stack.size >= 1)
+            {
+                StackTopDegBy(idx);
+                return true;
+            }
+            else
+            {
+                return ThrowStackUnderflow();
+            }
         }
         else
         {
@@ -465,7 +508,6 @@ void ParseLine()
     {
         if (!ParseCommand())
         {
-            fprintf(stderr, "ERROR - jakis nieokreslony jeszcze\n");
             ReadUntilNewline();
         }
     }
