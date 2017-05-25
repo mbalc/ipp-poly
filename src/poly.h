@@ -19,7 +19,7 @@
 typedef long poly_coeff_t;
 
 /** Typ wykładników wielomianu */
-typedef long poly_exp_t;
+typedef int poly_exp_t;
 
 typedef struct Mono Mono;
 
@@ -125,7 +125,8 @@ Poly PolyClone(const Poly *p);
  */
 static inline Mono MonoClone(const Mono *m)
 {
-    return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp};
+    return (Mono) {.p = PolyClone(&(m->p)), .exp = m->exp,
+        .prev = m->prev, .next = m->next};
 }
 
 /*}@**/
@@ -277,6 +278,15 @@ Poly PolyAt(const Poly *p, poly_coeff_t x);
  * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
  * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu
  * łacińskiego.
+ * @param[in] p : wielomian
+ */
+void PrintPolyVar(const Poly *p);
+
+
+/**
+ * Wypisuje na standardowe wyjście zawartość struktury wielomianu.
+ * Wielomian wypisywany jest w formacie akceptowanym przez
+ * kalkulator wielomianów.
  * @param[in] p : wielomian
  */
 void PrintPoly(const Poly *p);

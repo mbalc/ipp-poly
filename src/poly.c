@@ -47,19 +47,54 @@ static void PrintPolyList(const Poly *p, char c)
             PrintPolyList(&ptr->p, c + 1);
             printf(")");
         }
-        printf("%c^%ld", c, ptr->exp);
+        printf("%c^%d", c, ptr->exp);
     }
 }
 
 /**
- * @details Implementacja procedury PrintPoly udokumentowanej w pliku poly.h.
+ * @details Implementacja procedury PrintPolyVar udokumentowanej w pliku poly.h.
  * Kolejne zmienne wielomianu sa nazywane kolejnymi literami alfabetu
  * łacińskiego.
  * @param[in] p : wielomian
  */
-void PrintPoly(const Poly *p)
+void PrintPolyVar(const Poly *p)
 {
     PrintPolyList(p, 'a');
+}
+
+/**
+ * @details Implementacja procedury PrintPoly udokumentowanej w pliku poly.h.
+ * Wielomian wypisywany jest w formacie akceptowanym przez
+ * kalkulator wielomianów.
+ * @param[in] p : wielomian
+ */
+void PrintPoly(const Poly *p)
+{
+    if (PolyIsCoeff(p))
+    {
+        printf("%ld", p->abs_term);
+    }
+    else
+    {
+        Mono *ptr = p->last;
+        if (p->abs_term == 0)
+        {
+            printf("(");
+            PrintPoly(&ptr->p);
+            printf(",%d)", ptr->exp);
+            ptr = ptr->prev;
+        }
+        else
+        {
+            printf("(%ld,0)", p->abs_term);
+        }
+        for (; ptr != NULL; ptr = ptr->prev)
+        {
+            printf("+(");
+            PrintPoly(&ptr->p);
+            printf(",%d)", ptr->exp);
+        }
+    }
 }
 
 /**
@@ -259,10 +294,10 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
             assert(false);
         }
     }
- 
+
     PolyAppendMono(&out, buf);
     free(arr);
-  
+
 
     if (out.last->exp == 0)
     {
@@ -282,8 +317,8 @@ Poly PolyAddMonos(unsigned count, const Mono monos[])
         }
         LinkMonos(out.last, NULL);
     }
-    
-   return out;
+
+    return out;
 }
 
 /**
