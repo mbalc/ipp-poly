@@ -15,7 +15,6 @@ void MonoStackDestroy(PointerStack *mono_stack)
 {
     while (mono_stack->next_elem != NULL)
     {
-        MonoDestroy(mono_stack->elem_pointer);
         free(mono_stack->elem_pointer);
         PopStack(mono_stack);
     }
@@ -142,7 +141,7 @@ void StackTopInsertZero()
 {
     Poly *new_poly = malloc(sizeof(Poly));
     *new_poly = PolyZero();
-    PushOntoStack(&new_poly, &global_pcalc_poly_stack);
+    PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
 
 void StackTopClone()
@@ -436,7 +435,7 @@ bool ParsePoly(Poly *output)
         for (PointerStack *ptr = &mono_stack; ptr->next_elem != NULL;
              ptr = ptr->next_elem)
         {
-            monos[ptr->size - 1] = MonoClone(GetStackTop(ptr));
+            monos[ptr->size - 1] = *(Mono*)(GetStackTop(ptr));
         }
         MonoStackDestroy(&mono_stack);
         *output = PolyAddMonos(monos_size, monos);
