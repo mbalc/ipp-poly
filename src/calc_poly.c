@@ -153,7 +153,10 @@ void StackTopClone()
 
 void StackTopPop()
 {
+    Poly *a = global_pcalc_poly_stack.elem_pointer;
     PopStack(&global_pcalc_poly_stack);
+    PolyDestroy(a);
+    free(a);
 }
 
 void StackTopNeg()
@@ -162,6 +165,7 @@ void StackTopNeg()
     Poly *b = malloc(sizeof(Poly));
     *b = PolyNeg(a);
     PolyDestroy(a);
+    free(a);
     PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
@@ -208,19 +212,20 @@ void StackTopAt(poly_coeff_t x)
     Poly *b = malloc(sizeof(Poly));
     *b = PolyAt(a, x);
     PolyDestroy(a);
+    free(a);
     PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
 bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
-    if (*a > 0)
+    if (*a >= 0)
     {
         if (upper_limit - *a < b)
         {
             return true;
         }
     }
-    if (*a < 0)
+    if (*a <= 0)
     {
         if (b < lower_limit - *a)
         {
@@ -410,7 +415,7 @@ bool ParseCommand()
             }
             if (global_pcalc_read_buffer != '\n')
             {
-                return ThrowParseAtArgError();
+                return ThrowParseDegByArgError();
             }
             unsigned idx = arg;
             if (global_pcalc_poly_stack.size >= 1)
@@ -439,20 +444,33 @@ bool ParseMono(Mono *output)
     Poly *poly_coeff = malloc(sizeof(Poly));
     if (ParsePoly(poly_coeff))
     {
+        free(poly_coeff);
         return true;
     }
     if (global_pcalc_read_buffer != ',')
     {
+        PolyDestroy(poly_coeff);
+        free(poly_coeff);
         return true;
     }
     ReadCharacter();
     poly_exp_t e;
+    if (!BufferIsNumber())
+    {
+        PolyDestroy(poly_coeff);
+        free(poly_coeff);
+        return true;
+    }
     if (ParseExp(&e))
     {
+        PolyDestroy(poly_coeff);
+        free(poly_coeff);
         return true;
     }
     if (global_pcalc_read_buffer != ')')
     {
+        PolyDestroy(poly_coeff);
+        free(poly_coeff);
         return true;
     }
     ReadCharacter();
@@ -472,12 +490,28 @@ bool ParsePoly(Poly *output)
             ReadCharacter();
             if (ParseMono(new_mono))
             {
+                free(new_mono);
+                MonoStackDestroy(&mono_stack);
                 return true;
             }
             PushOntoStack(new_mono, &mono_stack);
-            if (global_pcalc_read_buffer == '+')
+            if (BufferIsEndline() || global_pcalc_read_buffer == ',')
+            {
+                break;
+            }
+            else if (global_pcalc_read_buffer == '+')
             {
                 ReadCharacter();
+                if (global_pcalc_read_buffer != '(')
+                {
+                    MonoStackDestroy(&mono_stack);
+                    return true;
+                }
+            }
+            else
+            {
+                MonoStackDestroy(&mono_stack);
+                return true;
             }
         }
         unsigned monos_size = mono_stack.size;
@@ -543,7 +577,10 @@ void ParseLine()
 
 int main()
 {
+    global_pcalc_poly_stack = NewPointerStack();
     global_pcalc_read_buffer = 1;
+    global_pcalc_line_number = 1;
+    global_pcalc_column_number = 0;
     while (global_pcalc_read_buffer != EOF)
     {
         ParseLine();
