@@ -82,32 +82,32 @@ void PrintExpressionResult(int expression)
 bool ThrowStackUnderflow()
 {
     fprintf(stderr, "ERROR %d STACK UNDERFLOW\n", global_pcalc_line_number);
-    return false;
+    return true;
 }
 
 bool ThrowParsePolyError()
 {
     fprintf(stderr, "ERROR %d %d\n",
             global_pcalc_line_number, global_pcalc_column_number);
-    return false;
+    return true;
 }
 
 bool ThrowParseCommandError()
 {
     fprintf(stderr, "ERROR %d WRONG COMMAND\n", global_pcalc_line_number);
-    return false;
+    return true;
 }
 
 bool ThrowParseAtArgError()
 {
     fprintf(stderr, "ERROR %d WRONG VALUE\n", global_pcalc_line_number);
-    return false;
+    return true;
 }
 
 bool ThrowParseDegByArgError()
 {
     fprintf(stderr, "ERROR %d WRONG VARIABLE\n", global_pcalc_line_number);
-    return false;
+    return true;
 }
 
 
@@ -217,27 +217,27 @@ bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
     {
         if (upper_limit - *a < b)
         {
-            return false;
+            return true;
         }
     }
     if (*a < 0)
     {
         if (b < lower_limit - *a)
         {
-            return false;
+            return true;
         }
     }
     *a = *a + b;
-    return true;
+    return false;
 }
 
 bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
 {
     for (int i = 2; i < 16; i = i + i)
     {
-        if (!AddNumbers(lower_limit, upper_limit, a, *a))
+        if (AddNumbers(lower_limit, upper_limit, a, *a))
         {
-            return false;
+            return true;
         }
         //a = i * a
     }
@@ -256,19 +256,19 @@ bool ParseNumber(long lower_limit, long upper_limit, long *output)
     }
     while (BufferIsNumber())
     {
-        if (!MultiplyByTen(lower_limit, upper_limit, &out))
+        if (MultiplyByTen(lower_limit, upper_limit, &out))
         {
-            return false;
+            return true;
         }
-        if (!AddNumbers(lower_limit, upper_limit, &out,
-                        (negative ? -1 : 1) * (global_pcalc_read_buffer - '0')))
+        if (AddNumbers(lower_limit, upper_limit, &out,
+                       (negative ? -1 : 1) * (global_pcalc_read_buffer - '0')))
         {
-            return false;
+            return true;
         }
         ReadCharacter();
     }
     *output = out;
-    return true;
+    return false;
 }
 
 bool ParseCoeff(poly_coeff_t *out)
@@ -276,9 +276,9 @@ bool ParseCoeff(poly_coeff_t *out)
     long parser_output;
     if (ParseNumber(LONG_MIN, LONG_MAX, &parser_output))
     {
-        *out = parser_output;
         return true;
     }
+    *out = parser_output;
     return false;
 }
 
@@ -287,9 +287,9 @@ bool ParseExp(poly_exp_t *out)
     long parser_output;
     if (ParseNumber(0, INT_MAX, &parser_output))
     {
-        *out = parser_output;
         return true;
     }
+    *out = parser_output;
     return false;
 }
 
@@ -298,7 +298,7 @@ bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
     if (global_pcalc_poly_stack.size >= size_requirement)
     {
         procedure();
-        return true;
+        return false;
     }
     else
     {
@@ -368,7 +368,6 @@ bool ParseCommand()
         {
             return ThrowParseCommandError();
         }
-        return true;
     }
     if (global_pcalc_read_buffer == ' ')
     {
@@ -380,7 +379,7 @@ bool ParseCommand()
                 return ThrowParseAtArgError();
             }
             poly_coeff_t arg;
-            if (!ParseCoeff(&arg))
+            if (ParseCoeff(&arg))
             {
                 return ThrowParseAtArgError();
             }
@@ -391,7 +390,7 @@ bool ParseCommand()
             if (global_pcalc_poly_stack.size >= 1)
             {
                 StackTopAt(arg);
-                return true;
+                return false;
             }
             else
             {
@@ -405,7 +404,7 @@ bool ParseCommand()
                 return ThrowParseDegByArgError();
             }
             long arg;
-            if (!ParseNumber(0, UINT_MAX,&arg))
+            if (ParseNumber(0, UINT_MAX,&arg))
             {
                 return ThrowParseDegByArgError();
             }
@@ -417,7 +416,7 @@ bool ParseCommand()
             if (global_pcalc_poly_stack.size >= 1)
             {
                 StackTopDegBy(idx);
-                return true;
+                return false;
             }
             else
             {
@@ -438,28 +437,28 @@ bool ParsePoly(Poly *output);
 bool ParseMono(Mono *output)
 {
     Poly *poly_coeff = malloc(sizeof(Poly));
-    if (!ParsePoly(poly_coeff))
+    if (ParsePoly(poly_coeff))
     {
-        return false;
+        return true;
     }
     if (global_pcalc_read_buffer != ',')
     {
-        return false;
+        return true;
     }
     ReadCharacter();
     poly_exp_t e;
-    if (!ParseExp(&e))
+    if (ParseExp(&e))
     {
-        return false;
+        return true;
     }
     if (global_pcalc_read_buffer != ')')
     {
-        return false;
+        return true;
     }
     ReadCharacter();
     *output = MonoFromPoly(poly_coeff, e);
     free(poly_coeff);
-    return true;
+    return false;
 }
 
 bool ParsePoly(Poly *output)
@@ -471,9 +470,9 @@ bool ParsePoly(Poly *output)
         {
             Mono *new_mono = malloc(sizeof(Mono));
             ReadCharacter();
-            if (!ParseMono(new_mono))
+            if (ParseMono(new_mono))
             {
-                return false;
+                return true;
             }
             PushOntoStack(new_mono, &mono_stack);
             if (global_pcalc_read_buffer == '+')
@@ -494,18 +493,18 @@ bool ParsePoly(Poly *output)
     else if (BufferIsNumber())
     {
         poly_coeff_t coeff;
-        if (!ParseCoeff(&coeff))
+        if (ParseCoeff(&coeff))
         {
-            return false;
+            return true;
         }
         *output = PolyFromCoeff(coeff);
 
     }
     else
     {
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 
@@ -514,7 +513,7 @@ void ParseLine()
     ReadCharacter();
     if (BufferIsLetter())
     {
-        if (!ParseCommand())
+        if (ParseCommand())
         {
             ReadUntilNewline();
         }
@@ -525,7 +524,7 @@ void ParseLine()
     else
     {
         Poly *new_poly = malloc(sizeof(Poly));
-        if (!ParsePoly(new_poly) || !BufferIsEndline())
+        if (ParsePoly(new_poly) || !BufferIsEndline())
         {
             free(new_poly);
             ThrowParsePolyError();
