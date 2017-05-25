@@ -217,7 +217,6 @@ bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
     {
         if (upper_limit - *a < b)
         {
-            printf("upperlimit hit\n");
             return false;
         }
     }
@@ -225,7 +224,6 @@ bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
     {
         if (b < lower_limit - *a)
         {
-            printf("lowerlimit hit\n");
             return false;
         }
     }
@@ -313,7 +311,8 @@ bool ParseCommand()
     static unsigned max_command_length = 20;
     char command[max_command_length];
     command[0] = global_pcalc_read_buffer;
-    scanf("%s", command + 1);
+    bool status = scanf("%20s", command + 1); //max_command_length used
+    assert(status);
     ReadCharacter();
     if (BufferIsEndline())
     {
@@ -376,6 +375,10 @@ bool ParseCommand()
         ReadCharacter();
         if (strcmp(command, "AT") == 0)
         {
+            if (!BufferIsNumber())
+            {
+                return ThrowParseAtArgError();
+            }
             poly_coeff_t arg;
             if (!ParseCoeff(&arg))
             {
@@ -397,6 +400,10 @@ bool ParseCommand()
         }
         else if (strcmp(command, "DEG_BY") == 0)
         {
+            if (!BufferIsNumber())
+            {
+                return ThrowParseDegByArgError();
+            }
             long arg;
             if (!ParseNumber(0, UINT_MAX,&arg))
             {
@@ -421,6 +428,7 @@ bool ParseCommand()
         {
             return ThrowParseCommandError();
         }
+
     }
     return ThrowParseCommandError();
 }
