@@ -272,7 +272,6 @@ bool ParseCoeff(poly_coeff_t *out)
     if (ParseNumber(LONG_MIN, LONG_MAX, &parser_output))
     {
         *out = parser_output;
-        printf("parsed coeff %ld\n", parser_output);
         return true;
     }
     return false;

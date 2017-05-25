@@ -62,31 +62,34 @@ void PrintPolyVar(const Poly *p)
     PrintPolyList(p, 'a');
 }
 
+
 /**
- * @details Implementacja procedury PrintPoly udokumentowanej w pliku poly.h.
+ * Wypisuje wielomian, gdy niewypisana jeszcze część jego wyrazu wolnego wynosi @p deg.
+ * Wypisuje zawartość struktury danego wielomianu na standardowe wyjście.
  * Wielomian wypisywany jest w formacie akceptowanym przez
  * kalkulator wielomianów.
  * @param[in] p : wielomian
+ * @param[in] dep : niewypisana część wyrazu wolnego wielomianu
  */
-void PrintPoly(const Poly *p)
+static void PrintPolyWithDep(const Poly *p, poly_coeff_t dep)
 {
     if (PolyIsCoeff(p))
     {
-        printf("%ld", p->abs_term);
+        printf("%ld", p->abs_term + dep);
     }
     else
     {
         Mono *ptr = p->last;
-        if (p->abs_term == 0)
+        if (ptr->exp != 0 && p->abs_term + dep != 0)
         {
-            printf("(");
-            PrintPoly(&ptr->p);
-            printf(",%d)", ptr->exp);
-            ptr = ptr->prev;
+            printf("(%ld,0)", p->abs_term + dep);
         }
         else
         {
-            printf("(%ld,0)", p->abs_term);
+            printf("(");
+            PrintPolyWithDep(&ptr->p, dep + p->abs_term);
+            printf(",%d)", ptr->exp);
+            ptr = ptr->prev;
         }
         for (; ptr != NULL; ptr = ptr->prev)
         {
@@ -95,6 +98,18 @@ void PrintPoly(const Poly *p)
             printf(",%d)", ptr->exp);
         }
     }
+}
+
+
+/**
+ * @details Implementacja procedury PrintPoly udokumentowanej w pliku poly.h.
+ * Wielomian wypisywany jest w formacie akceptowanym przez
+ * kalkulator wielomianów.
+ * @param[in] p : wielomian
+ */
+void PrintPoly(const Poly *p)
+{
+    PrintPolyWithDep(p, 0);
 }
 
 /**
