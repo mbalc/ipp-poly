@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 #include "poly.h"
 #include "stack.h"
 
@@ -63,9 +64,35 @@ void PrintExpressionResult(int expression)
 
 bool ThrowStackUnderflow()
 {
-    printf("ERROR %d STACK UNDERFLOW\n", global_pcalc_line_number);
+    fprintf(stderr, "ERROR %d STACK UNDERFLOW\n", global_pcalc_line_number);
     return false;
 }
+
+bool ThrowParsePolyError()
+{
+    fprintf(stderr, "ERROR %d %d\n",
+            global_pcalc_line_number, global_pcalc_column_number);
+    return false;
+}
+
+bool ThrowParseCommandError()
+{
+    fprintf(stderr, "ERROR %d WRONG COMMAND\n", global_pcalc_line_number);
+    return false;
+}
+
+bool ThrowParseAtArgError()
+{
+    fprintf(stderr, "ERROR %d WRONG VALUE\n", global_pcalc_line_number);
+    return false;
+}
+
+bool ThrowParseDegByArgError()
+{
+    fprintf(stderr, "ERROR %d WRONG VARIABLE\n", global_pcalc_line_number);
+    return false;
+}
+
 
 void StackTopIsZero()
 {
@@ -253,9 +280,7 @@ bool ParseCommand()
     char command[max_command_length];
     command[0] = global_pcalc_read_buffer;
     scanf("%s", command + 1);
-    printf("%s -<<\n", command);
     ReadCharacter();
-    printf("(%c) - buffer\n", global_pcalc_read_buffer);
     if (global_pcalc_read_buffer == '\n')
     {
         if (strcmp(command, "DEG") == 0)
@@ -286,17 +311,49 @@ bool ParseCommand()
         {
             return ExecuteOnPolyStack(1, StackTopPop);
         }
+        else if (strcmp(command, "NEG") == 0)
+        {
+            return ExecuteOnPolyStack(1, StackTopNeg);
+        }
+        else if (strcmp(command, "IS_EQ") == 0)
+        {
+            return ExecuteOnPolyStack(1, StackTopIsEq);
+        }
+        else if (strcmp(command, "ADD") == 0)
+        {
+            return ExecuteOnPolyStack(2, StackTopAdd);
+        }
+        else if (strcmp(command, "MUL") == 0)
+        {
+            return ExecuteOnPolyStack(2, StackTopMul);
+        }
+        else if (strcmp(command, "SUB") == 0)
+        {
+            return ExecuteOnPolyStack(2, StackTopSub);
+        }
         else
         {
-            return false;
+            return ThrowParseCommandError();
         }
         return true;
     }
     if (global_pcalc_read_buffer == ' ')
     {
-
+        ReadCharacter();
+        if (strcmp(command, "AT") == 0)
+        {
+            return ExecuteOnPolyStack(2, StackTopMul);
+        }
+        else if (strcmp(command, "DEG_BY") == 0)
+        {
+            return ExecuteOnPolyStack(2, StackTopMul);
+        }
+        else
+        {
+            return ThrowParseCommandError();
+        }
     }
-    return false;
+    return ThrowParseCommandError();
 }
 
 bool ParsePoly(Poly *output);
@@ -341,13 +398,11 @@ bool ParsePoly(Poly *output)
                 return false;
             }
             PushOntoStack(new_mono, &mono_stack);
-            printf("buffer == %c\n", global_pcalc_read_buffer);
             if (global_pcalc_read_buffer == '+')
             {
                 ReadCharacter();
             }
         }
-        printf("hehe sajz %d\n", mono_stack.size);
         unsigned monos_size = mono_stack.size;
         Mono monos[monos_size];
         for (unsigned i = 0; i < monos_size; ++i)
@@ -380,13 +435,12 @@ bool ParsePoly(Poly *output)
 void ParseLine()
 {
     ReadCharacter();
-    printf("%c ??\n", global_pcalc_read_buffer);
     if (('a' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= 'z') ||
         ('A' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= 'Z'))
     {
         if (!ParseCommand())
         {
-            printf("ERROR\n");
+            fprintf(stderr, "ERROR - jakis nieokreslony jeszcze\n");
             ReadUntilNewline();
         }
     }
@@ -395,15 +449,14 @@ void ParseLine()
         Poly *new_poly = malloc(sizeof(Poly));
         if (!ParsePoly(new_poly))
         {
-            printf("ERROR %d %d\n", global_pcalc_line_number,
-                   global_pcalc_column_number);
+
             ReadUntilNewline();
         }
         PushOntoStack(new_poly, &global_pcalc_poly_stack);
     }
     if (global_pcalc_read_buffer != '\n')
     {
-        printf("da (%c) aah!\n", global_pcalc_read_buffer);
+        assert(false);
     }
 }
 
