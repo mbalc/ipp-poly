@@ -21,6 +21,15 @@ void MonoStackDestroy(PointerStack *mono_stack)
     free(mono_stack);
 }
 
+void PolyStackDestroy(PointerStack *poly_stack)
+{
+    while (poly_stack->next_elem != NULL)
+    {
+        PolyDestroy(poly_stack->elem_pointer);
+        PopStack(poly_stack);
+    }
+}
+
 
 bool BufferIsNumber()
 {
@@ -31,7 +40,16 @@ bool BufferIsNumber()
 
 bool BufferIsEndline()
 {
-    return global_pcalc_read_buffer == '\n';
+    return global_pcalc_read_buffer == '\n' ||
+           global_pcalc_read_buffer == EOF;
+}
+
+bool BufferIsLetter()
+{
+    return ('a' <= global_pcalc_read_buffer &&
+            global_pcalc_read_buffer <= 'z') ||
+           ('A' <= global_pcalc_read_buffer &&
+            global_pcalc_read_buffer <= 'Z');
 }
 
 void ReadCharacter()
@@ -50,8 +68,7 @@ void ReadCharacter()
 
 void ReadUntilNewline()
 {
-    while (global_pcalc_read_buffer != '\n'
-           && global_pcalc_read_buffer != 0)
+    while (!BufferIsEndline())
     {
         ReadCharacter();
     }
@@ -117,6 +134,7 @@ void StackTopDegBy(unsigned idx)
 void StackTopPrint()
 {
     PrintPoly(GetStackTop(&global_pcalc_poly_stack));
+    printf("\n");
 }
 
 void StackTopInsertZero()
@@ -138,7 +156,10 @@ void StackTopPop()
 
 void StackTopNeg()
 {
-
+    Poly *a = PollStackTop(&global_pcalc_poly_stack);
+    Poly b = PolyNeg(a);
+    PolyDestroy(a);
+    PushOntoStack(&b, &global_pcalc_poly_stack);
 }
 
 void StackTopIsEq()
@@ -281,7 +302,7 @@ bool ParseCommand()
     command[0] = global_pcalc_read_buffer;
     scanf("%s", command + 1);
     ReadCharacter();
-    if (global_pcalc_read_buffer == '\n')
+    if (BufferIsEndline())
     {
         if (strcmp(command, "DEG") == 0)
         {
@@ -407,12 +428,11 @@ bool ParsePoly(Poly *output)
         Mono monos[monos_size];
         for (unsigned i = 0; i < monos_size; ++i)
         {
-            monos[i] = *(Mono*)GetStackTop(&mono_stack);
+            monos[i] = MonoClone((Mono*)GetStackTop(&mono_stack));
+            MonoDestroy(GetStackTop(&mono_stack));
             PopStack(&mono_stack);
         }
         *output = PolyAddMonos(monos_size, monos);
-        PrintPoly(output);
-
     }
     else if (BufferIsNumber())
     {
@@ -435,8 +455,7 @@ bool ParsePoly(Poly *output)
 void ParseLine()
 {
     ReadCharacter();
-    if (('a' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= 'z') ||
-        ('A' <= global_pcalc_read_buffer && global_pcalc_read_buffer <= 'Z'))
+    if (BufferIsLetter())
     {
         if (!ParseCommand())
         {
@@ -444,17 +463,24 @@ void ParseLine()
             ReadUntilNewline();
         }
     }
+    else if (BufferIsEndline())
+    {
+    }
     else
     {
         Poly *new_poly = malloc(sizeof(Poly));
         if (!ParsePoly(new_poly))
         {
-
+            free(new_poly);
+            ThrowParsePolyError();
             ReadUntilNewline();
         }
-        PushOntoStack(new_poly, &global_pcalc_poly_stack);
+        else
+        {
+            PushOntoStack(new_poly, &global_pcalc_poly_stack);
+        }
     }
-    if (global_pcalc_read_buffer != '\n')
+    if (!BufferIsEndline())
     {
         assert(false);
     }
@@ -463,7 +489,10 @@ void ParseLine()
 int main()
 {
     global_pcalc_read_buffer = 1;
-    while (global_pcalc_read_buffer != 0)
+    while (global_pcalc_read_buffer != EOF)
+    {
         ParseLine();
+    }
+    PolyStackDestroy(&global_pcalc_poly_stack);
     return 0;
 }
