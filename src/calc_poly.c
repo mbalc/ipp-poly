@@ -11,6 +11,30 @@ static PointerStack global_pcalc_poly_stack;
 static unsigned global_pcalc_line_number;
 static unsigned global_pcalc_column_number;
 
+
+/**
+ * Alokuje na stercie (ang - heap) miejsce na strukturę Mono.
+ * @return wskaźnik na nowy obszar w pamięci
+ */
+static inline Mono* MonoMalloc()
+{
+    Mono *out = (Mono*)malloc(sizeof(Mono));
+    assert(out);
+    return out;
+
+}
+/**
+ * Alokuje na stercie (ang - heap) miejsce na strukturę Poly.
+ * @return wskaźnik na nowy obszar w pamięci
+ */
+static inline Poly* PolyMalloc()
+{
+    Poly *out = (Poly*)malloc(sizeof(Poly));
+    assert(out);
+    return out;
+}
+
+
 void MonoStackDestroy(PointerStack *mono_stack)
 {
     while (mono_stack->next_elem != NULL)
@@ -139,14 +163,14 @@ void StackTopPrint()
 
 void StackTopInsertZero()
 {
-    Poly *new_poly = malloc(sizeof(Poly));
+    Poly *new_poly = PolyMalloc();
     *new_poly = PolyZero();
     PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
 
 void StackTopClone()
 {
-    Poly *new_poly = malloc(sizeof(Poly));
+    Poly *new_poly = PolyMalloc();
     *new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
     PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
@@ -162,7 +186,7 @@ void StackTopPop()
 void StackTopNeg()
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
-    Poly *b = malloc(sizeof(Poly));
+    Poly *b = PolyMalloc();
     *b = PolyNeg(a);
     PolyDestroy(a);
     free(a);
@@ -182,7 +206,7 @@ void PushBinaryPolyOperationResultOntoStack
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = PollStackTop(&global_pcalc_poly_stack);
-    Poly *res = malloc(sizeof(Poly));
+    Poly *res = PolyMalloc();
     *res = operation(a, b);
     PushOntoStack(res, &global_pcalc_poly_stack);
     PolyDestroy(a);
@@ -209,7 +233,7 @@ void StackTopSub()
 void StackTopAt(poly_coeff_t x)
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
-    Poly *b = malloc(sizeof(Poly));
+    Poly *b = PolyMalloc();
     *b = PolyAt(a, x);
     PolyDestroy(a);
     free(a);
@@ -441,7 +465,7 @@ bool ParsePoly(Poly *output);
 
 bool ParseMono(Mono *output)
 {
-    Poly *poly_coeff = malloc(sizeof(Poly));
+    Poly *poly_coeff = PolyMalloc();
     if (ParsePoly(poly_coeff))
     {
         free(poly_coeff);
@@ -486,7 +510,7 @@ bool ParsePoly(Poly *output)
         PointerStack mono_stack = NewPointerStack();
         while (global_pcalc_read_buffer == '(')
         {
-            Mono *new_mono = malloc(sizeof(Mono));
+            Mono *new_mono = MonoMalloc();
             ReadCharacter();
             if (ParseMono(new_mono))
             {
@@ -557,7 +581,7 @@ void ParseLine()
     }
     else
     {
-        Poly *new_poly = malloc(sizeof(Poly));
+        Poly *new_poly = PolyMalloc();
         if (ParsePoly(new_poly) || !BufferIsEndline())
         {
             free(new_poly);
