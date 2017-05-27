@@ -2,6 +2,7 @@
 
 if [[ $# -ne 2 ]]; then
     echo "zła liczba argumentów"
+    exit 1
 fi
 
 PROGRAM=$1
@@ -9,10 +10,12 @@ DATADIR=${2%/}
 
 if [[ ! -x "$PROGRAM" ]]; then
     echo "podana nazwa programu nie wskazuje na plik wykonywalny"
+    exit 1
 fi
 
 if [[ ! -d "$DATADIR" ]]; then
     echo "podana nazwa programu nie wskazuje na katalog"
+    exit 1
 fi
 
 IFS=$'\n'
