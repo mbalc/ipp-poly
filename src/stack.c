@@ -1,3 +1,12 @@
+/** @file
+   Implementacja interfejsu stosu wskaźników
+
+   @author Michał Balcerzak <mb385130@students.mimuw.edu.pl>
+   @copyright Uniwersytet Warszawski
+   @date 2017-05-27
+ */
+
+
 #include "stack.h"
 
 PointerStack NewPointerStack()

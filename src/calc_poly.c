@@ -1,3 +1,11 @@
+/** @file
+   Implementacja kalkulatora działającego na wielomianach
+
+   @author Michał Balcerzak <mb385130@students.mimuw.edu.pl>
+   @copyright Uniwersytet Warszawski
+   @date 2017-05-27
+ */
+
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
