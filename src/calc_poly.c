@@ -13,10 +13,17 @@
 #include "poly.h"
 #include "stack.h"
 
+
+/** Ostatni wczytany ze standardowego wejścia znak. */
 static char global_pcalc_read_buffer;
+
+/** Główny stos wielomianów, na którym operuje kalkulator. */
 static PointerStack global_pcalc_poly_stack;
 
+/** Numer wiersza, z którego były ostatnio wczytywane znaki. */
 static unsigned global_pcalc_line_number;
+
+/** Numer ostatnio wczytanej kolumny. */
 static unsigned global_pcalc_column_number;
 
 
@@ -24,7 +31,7 @@ static unsigned global_pcalc_column_number;
  * Alokuje na stercie (ang - heap) miejsce na strukturę Mono.
  * @return wskaźnik na nowy obszar w pamięci
  */
-static inline Mono* MonoMalloc()
+static Mono* MonoMalloc()
 {
     Mono *out = (Mono*)malloc(sizeof(Mono));
     assert(out);
@@ -35,56 +42,18 @@ static inline Mono* MonoMalloc()
  * Alokuje na stercie (ang - heap) miejsce na strukturę Poly.
  * @return wskaźnik na nowy obszar w pamięci
  */
-static inline Poly* PolyMalloc()
+static Poly* PolyMalloc()
 {
     Poly *out = (Poly*)malloc(sizeof(Poly));
     assert(out);
     return out;
 }
 
-
-void MonoStackDestroy(PointerStack *mono_stack)
-{
-    while (mono_stack->next_elem != NULL)
-    {
-        free(mono_stack->elem_pointer);
-        PopStack(mono_stack);
-    }
-}
-
-void PolyStackDestroy(PointerStack *poly_stack)
-{
-    while (poly_stack->next_elem != NULL)
-    {
-        PolyDestroy(poly_stack->elem_pointer);
-        free(poly_stack->elem_pointer);
-        PopStack(poly_stack);
-    }
-}
-
-
-bool BufferIsNumber()
-{
-    return (('0' <= global_pcalc_read_buffer) &&
-            (global_pcalc_read_buffer <= '9')) ||
-           global_pcalc_read_buffer == '-';
-}
-
-bool BufferIsEndline()
-{
-    return global_pcalc_read_buffer == '\n' ||
-           global_pcalc_read_buffer == EOF;
-}
-
-bool BufferIsLetter()
-{
-    return ('a' <= global_pcalc_read_buffer &&
-            global_pcalc_read_buffer <= 'z') ||
-           ('A' <= global_pcalc_read_buffer &&
-            global_pcalc_read_buffer <= 'Z');
-}
-
-void ReadCharacter()
+/**
+ * Wczytuje kolejną literę z wejścia do pamięci.
+ * Ostatnio wczytany znak jest dostępny dla parserów w globalnej zmiennej.
+ */
+static void ReadCharacter()
 {
     if (global_pcalc_read_buffer == '\n')
     {
@@ -98,7 +67,71 @@ void ReadCharacter()
     global_pcalc_read_buffer = getchar();
 }
 
-void ReadUntilNewline()
+/**
+ * Usuwa zawartość stosu jednomianów z pamięci.
+ * @param[in,out] mono_stack : stos jednomianów, który chcemy wyczyścić
+ */
+static void MonoStackDestroy(PointerStack *mono_stack)
+{
+    while (mono_stack->next_elem != NULL)
+    {
+        free(mono_stack->elem_pointer);
+        PopStack(mono_stack);
+    }
+}
+
+/**
+ * Usuwa zawartość stosu wielomianów z pamięci.
+ * @param[in,out] poly_stack : stos wielomianów, który chcemy wyczyścić
+ */
+static void PolyStackDestroy(PointerStack *poly_stack)
+{
+    while (poly_stack->next_elem != NULL)
+    {
+        PolyDestroy(poly_stack->elem_pointer);
+        free(poly_stack->elem_pointer);
+        PopStack(poly_stack);
+    }
+}
+
+/**
+ * Sprawdza, czy ostatnio wczytany znak opisuje liczbę.
+ * @return czy bufor jest cyfrą bądź minusem
+ */
+static bool BufferIsNumber()
+{
+    return (('0' <= global_pcalc_read_buffer) &&
+            (global_pcalc_read_buffer <= '9')) ||
+           global_pcalc_read_buffer == '-';
+}
+
+/**
+ * Sprawdza, czy ostatnio wczytany znak opisuje koniec wiersza lub pliku wejścia.
+ * @return czy bufor jest znakiem końcą wiersza bądź oznacza koniec pliku
+ */
+static bool BufferIsEndline()
+{
+    return global_pcalc_read_buffer == '\n' ||
+           global_pcalc_read_buffer == EOF;
+}
+
+/**
+ * Sprawdza, czy ostatnio wczytany znak jest literą alfabetu łacińskiego.
+ * @return czy bufor jest literą
+ */
+static bool BufferIsLetter()
+{
+    return ('a' <= global_pcalc_read_buffer &&
+            global_pcalc_read_buffer <= 'z') ||
+           ('A' <= global_pcalc_read_buffer &&
+            global_pcalc_read_buffer <= 'Z');
+}
+
+/**
+ * Wczytuje znaki z wejścia póki nie napotka znaku końca wiersza lub znaku EOF.
+ * Używane przede wszystkim w przypadku napotkania błędu przez któryś z parserów.
+ */
+static void ReadUntilNewline()
 {
     while (!BufferIsEndline())
     {
@@ -106,84 +139,148 @@ void ReadUntilNewline()
     }
 }
 
-void PrintExpressionResult(int expression)
+/**
+ * Wypisuje na standardowe wyjście wartość wyrażenia.
+ * @param[in] expression : wyrażenie do wypisania
+ */
+static void PrintExpressionResult(int expression)
 {
     printf("%d\n", expression);
 }
 
-bool ThrowStackUnderflow()
+/**
+ * Zwraca błąd o zbyt małej liczbie wielomianów na stosie i wypisuje odpowiedni
+ * komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowStackUnderflow()
 {
     fprintf(stderr, "ERROR %d STACK UNDERFLOW\n", global_pcalc_line_number);
     return true;
 }
 
-bool ThrowParsePolyError()
+/**
+ * Zwraca błąd parsowania wielomianu i wypisuje odpowiedni komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowParsePolyError()
 {
     fprintf(stderr, "ERROR %d %d\n",
             global_pcalc_line_number, global_pcalc_column_number);
     return true;
 }
 
-bool ThrowParseCommandError()
+/**
+ * Zwraca błąd parsowania polecenia i wypisuje odpowiedni komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowParseCommandError()
 {
     fprintf(stderr, "ERROR %d WRONG COMMAND\n", global_pcalc_line_number);
     return true;
 }
 
-bool ThrowParseAtArgError()
+/**
+ * Zwraca błąd parsowania argumentu polecenia AT i wypisuje odpowiedni
+ * komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowParseAtArgError()
 {
     fprintf(stderr, "ERROR %d WRONG VALUE\n", global_pcalc_line_number);
     return true;
 }
 
-bool ThrowParseDegByArgError()
+/**
+ * Zwraca błąd parsowania argumentu polecenia DEG_BY i wypisuje odpowiedni
+ * komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowParseDegByArgError()
 {
     fprintf(stderr, "ERROR %d WRONG VARIABLE\n", global_pcalc_line_number);
     return true;
 }
 
-
-void StackTopIsZero()
+/**
+ * Wykonuje na stosie wielomianów operację IS_ZERO.
+ * Sprawdza, czy wielomian na wierzchołku stosu jest tożsamościowo równy zeru –
+ * wypisuje na standardowe wyjście 0 lub 1.
+ */
+static void StackTopIsZero()
 {
     PrintExpressionResult(PolyIsZero(GetStackTop(&global_pcalc_poly_stack)));
 }
 
-void StackTopIsCoeff()
+/**
+ * Wykonuje na stosie wielomianów operację IS_COEFF.
+ * Sprawdza, czy wielomian na wierzchołku stosu jest współczynnikiem –
+ * wypisuje na standardowe wyjście 0 lub 1.
+ */
+static void StackTopIsCoeff()
 {
     PrintExpressionResult(PolyIsCoeff(GetStackTop(&global_pcalc_poly_stack)));
 }
 
-void StackTopDeg()
+/**
+ * Wykonuje na stosie wielomianów operację DEG.
+ * Wypisuje na standardowe wyjście stopień wielomianu
+ * (−1 dla wielomianu tożsamościowo równego zeru).
+ */
+static void StackTopDeg()
 {
     PrintExpressionResult(PolyDeg(GetStackTop(&global_pcalc_poly_stack)));
 }
 
-void StackTopDegBy(unsigned idx)
+/**
+ * Wykonuje na stosie wielomianów operację DEG_BY dla zadanego numeru zmiennej.
+ * Wypisuje na standardowe wyjście stopień wielomianu ze względu na zmienną
+ * o numerze idx (−1 dla wielomianu tożsamościowo równego zeru).
+ * @param[in] idx : indeks zmiennej
+ */
+static void StackTopDegBy(unsigned idx)
 {
     PrintExpressionResult(PolyDegBy(GetStackTop(&global_pcalc_poly_stack), idx));
 }
 
-void StackTopPrint()
+/**
+ * Wykonuje na stosie wielomianów operację PRINT.
+ * Wypisuje na standardowe wyjście wielomian z wierzchołka stosu w formacie
+ * akceptowanym przez parser.
+ */
+static void StackTopPrint()
 {
     PrintPoly(GetStackTop(&global_pcalc_poly_stack));
     printf("\n");
 }
 
-void StackTopInsertZero()
+/**
+ * Wykonuje na stosie wielomianów operację ZERO.
+ * Wstawia na wierzchołek stosu wielomian tożsamościowo równy zeru.
+ */
+static void StackTopInsertZero()
 {
     Poly *new_poly = PolyMalloc();
     *new_poly = PolyZero();
     PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
 
-void StackTopClone()
+/**
+ * Wykonuje na stosie wielomianów operację CLONE.
+ * Wstawia na stos kopię wielomianu z wierzchu stosu.
+ */
+static void StackTopClone()
 {
     Poly *new_poly = PolyMalloc();
     *new_poly = PolyClone(GetStackTop(&global_pcalc_poly_stack));
     PushOntoStack(new_poly, &global_pcalc_poly_stack);
 }
 
-void StackTopPop()
+/**
+ * Wykonuje na stosie wielomianów operację POP.
+ * Usuwa wielomian z wierzchołka stosu.
+ */
+static void StackTopPop()
 {
     Poly *a = global_pcalc_poly_stack.elem_pointer;
     PopStack(&global_pcalc_poly_stack);
@@ -191,7 +288,11 @@ void StackTopPop()
     free(a);
 }
 
-void StackTopNeg()
+/**
+ * Wykonuje na stosie wielomianów operację NEG.
+ * Neguje wielomian na wierzchołku stosu.
+ */
+static void StackTopNeg()
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = PolyMalloc();
@@ -201,7 +302,12 @@ void StackTopNeg()
     PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
-void StackTopIsEq()
+/**
+ * Wykonuje na stosie wielomianów operację IS_EQ.
+ * Sprawdza, czy dwa wielomiany na wierzchu stosu są równe –
+ * wypisuje na standardowe wyjście 0 lub 1.
+ */
+static void StackTopIsEq()
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = GetStackTop(&global_pcalc_poly_stack);
@@ -209,7 +315,12 @@ void StackTopIsEq()
     PrintExpressionResult(PolyIsEq(a, b));
 }
 
-void PushBinaryPolyOperationResultOntoStack
+/**
+ * Wykonuje na dwóch pierwszych elementach stosu daną operację i umieszcza jej
+ * wynik na stosie.
+ * @param operation : operacja do wykonania na stosie
+ */
+static void PushBinaryPolyOperationResultOntoStack
     (Poly (*operation)(const Poly *a, const Poly *b))
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
@@ -223,22 +334,43 @@ void PushBinaryPolyOperationResultOntoStack
     free(b);
 }
 
-void StackTopAdd()
+/**
+ * Wykonuje na stosie wielomianów operację ADD.
+ * Dodaje dwa wielomiany z wierzchu stosu, usuwa je i wstawia na wierzchołek
+ * stosu ich sumę.
+ */
+static void StackTopAdd()
 {
     PushBinaryPolyOperationResultOntoStack(PolyAdd);
 }
 
-void StackTopMul()
+/**
+ * Wykonuje na stosie wielomianów operację MUL.
+ * Mnoży dwa wielomiany z wierzchu stosu, usuwa je i wstawia na wierzchołek
+ * stosu ich iloczyn.
+ */
+static void StackTopMul()
 {
     PushBinaryPolyOperationResultOntoStack(PolyMul);
 }
 
-void StackTopSub()
+/**
+ * Wykonuje na stosie wielomianów operację SUB.
+ * Odejmuje od wielomianu z wierzchołka wielomian pod wierzchołkiem, usuwa je
+ * i wstawia na wierzchołek stosu różnicę.
+ */
+static void StackTopSub()
 {
     PushBinaryPolyOperationResultOntoStack(PolySub);
 }
 
-void StackTopAt(poly_coeff_t x)
+/**
+ * Wykonuje na stosie wielomianów operację AT dla zadanej wartości zmiennej.
+ * Wylicza wartość wielomianu w punkcie x, usuwa wielomian z wierzchołka i
+ * wstawia na stos wynik operacji.
+ * @param[in] x : wartość pierwszej ze zmiennych
+ */
+static void StackTopAt(poly_coeff_t x)
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = PolyMalloc();
@@ -248,7 +380,17 @@ void StackTopAt(poly_coeff_t x)
     PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
-bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
+/**
+ * Dodaje @p b do @p a.
+ * Funkcja sprawdza, czy wykonanie takiego dodawania nie wykroczy poza
+ * dany zakres, w którym to przypadku zwraca błędny status wykonania.
+ * @param[in]  lower_limit : dolny zakres operacji
+ * @param[in]  upper_limit : górny zakres operacji
+ * @param[in,out]  a       : liczba, do której zostanie dodana wartość @p b
+ * @param[in]  b           : wartość do dodania do @p a
+ * @return             status wykonania
+ */
+static bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
 {
     if (*a >= 0)
     {
@@ -268,7 +410,16 @@ bool AddNumbers(long lower_limit, long upper_limit, long *a, long b)
     return false;
 }
 
-bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
+/**
+ * Mnoży @p a przez dziesięć.
+ * Funkcja sprawdza, czy wykonanie takiego mnożenia nie wykroczy poza
+ * dany zakres, w którym to przypadku zwraca błędny status wykonania.
+ * @param[in]  lower_limit : dolny zakres operacji
+ * @param[in]  upper_limit : górny zakres operacji
+ * @param[in,out]  a       : liczba do przemnożenia przez 10
+ * @return             status wykonania
+ */
+static bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
 {
     for (int i = 2; i < 16; i = i + i)
     {
@@ -282,8 +433,18 @@ bool MultiplyByTen(long lower_limit, long upper_limit, long *a)
     return AddNumbers(lower_limit, upper_limit, a, *a / 4);
 }
 
-
-bool ParseNumber(long lower_limit, long upper_limit, long *output)
+/**
+ * Parsuje liczbę ze standardowego wejścia.
+ * Parser wczyta liczbę jedynie w przypadku, gdy liczba dostępna na wejściu
+ * zawiera się w podanym zakresie.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @param[in]  lower_limit : dolny zakres liczby do wczytania
+ * @param[in]  upper_limit : górny zakres liczby do wczytania
+ * @param[out] output      : wyjście parsera
+ * @return             status wykonania parsowania
+ */
+static bool ParseNumber(long lower_limit, long upper_limit, long *output)
 {
     long out = 0;
     bool negative = (global_pcalc_read_buffer == '-');
@@ -308,7 +469,14 @@ bool ParseNumber(long lower_limit, long upper_limit, long *output)
     return false;
 }
 
-bool ParseCoeff(poly_coeff_t *out)
+/**
+ * Parsuje ze standardowego wejścia współczynnik.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @param[out] out      : wyjście parsera
+ * @return             status wykonania parsowania
+ */
+static bool ParseCoeff(poly_coeff_t *out)
 {
     long parser_output;
     if (ParseNumber(LONG_MIN, LONG_MAX, &parser_output))
@@ -319,7 +487,14 @@ bool ParseCoeff(poly_coeff_t *out)
     return false;
 }
 
-bool ParseExp(poly_exp_t *out)
+/**
+ * Parsuje ze standardowego wejścia wartość wykładnika.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @param[out] out      : wyjście parsera
+ * @return             status wykonania parsowania
+ */
+static bool ParseExp(poly_exp_t *out)
 {
     long parser_output;
     if (ParseNumber(0, INT_MAX, &parser_output))
@@ -330,7 +505,14 @@ bool ParseExp(poly_exp_t *out)
     return false;
 }
 
-bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
+/**
+ * Wykonuje daną operację jedynie, gdy na stosie jest wystarczająca liczba elementów.
+ * W przeciwnym wypadku zwraca błąd i wypisuje komunikat.
+ * @param[in]  size_requirement : wymagana liczba elementów na stosie
+ * @param[in]  procedure        : procedura do wykonania
+ * @return                  status wykonania operacji na stosie
+ */
+static bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
 {
     if (global_pcalc_poly_stack.size >= size_requirement)
     {
@@ -343,7 +525,13 @@ bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
     }
 }
 
-bool ParseCommand()
+/**
+ * Parsuje polecenie ze standardowego wejścia oraz wykonuje je.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @return             status wykonania parsowania
+ */
+static bool ParseCommand()
 {
     static unsigned max_command_length = 20;
     char command[max_command_length];
@@ -469,9 +657,16 @@ bool ParseCommand()
     return ThrowParseCommandError();
 }
 
-bool ParsePoly(Poly *output);
+static bool ParsePoly(Poly *output);
 
-bool ParseMono(Mono *output)
+/**
+ * Parsuje ze standardowego wejścia jednomian.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @param[out] output      : wyjście parsera
+ * @return             status wykonania parsowania
+ */
+static bool ParseMono(Mono *output)
 {
     Poly *poly_coeff = PolyMalloc();
     if (ParsePoly(poly_coeff))
@@ -511,7 +706,14 @@ bool ParseMono(Mono *output)
     return false;
 }
 
-bool ParsePoly(Poly *output)
+/**
+ * Parsuje ze standardowego wejścia wielomian.
+ * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
+ * wystąpi błąd.
+ * @param[out] output      : wyjście parsera
+ * @return             status wykonania parsowania
+ */
+static bool ParsePoly(Poly *output)
 {
     if (global_pcalc_read_buffer == '(')
     {
@@ -573,8 +775,12 @@ bool ParsePoly(Poly *output)
     return false;
 }
 
-
-void ParseLine()
+/**
+ * Interpretuje jedną linię standardowego wejścia dla kalkulatora.
+ * Założenie - po wykonaniu tego polecenia w buforze znajdować się będzie
+ * ostatni znak zinterpretowanego właśnie wiersza.
+ */
+static void ParseLine()
 {
     ReadCharacter();
     if (BufferIsLetter())
@@ -607,8 +813,13 @@ void ParseLine()
     }
 }
 
+/**
+ * Główna funkcja kalkulatora wielomianów.
+ * @return status wykonania
+ */
 int main()
 {
+    //inicjalizacja
     global_pcalc_poly_stack = NewPointerStack();
     global_pcalc_read_buffer = 1;
     global_pcalc_line_number = 1;
