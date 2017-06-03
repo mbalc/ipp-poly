@@ -609,6 +609,7 @@ static void ExecuteBinaryOnPoly(Poly *p, Poly (*operation)(const Poly *a, const 
     *p = buffer;
 }
 
+
 static Poly PolyPower(const Poly *p, unsigned exp_left)
 {
     Poly square = PolyClone(p);
@@ -628,19 +629,32 @@ static Poly PolyPower(const Poly *p, unsigned exp_left)
 
 static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level);
 
-static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsigned level, const Poly *substitution)
+static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsigned level, const Poly *to_substitute)
 {
     Poly out = PolySubstitute(&m->p, count, x, level + 1);
-    ExecuteBinaryOnPoly(&out, PolyMul, substitution);
+    ExecuteBinaryOnPoly(&out, PolyMul, to_substitute);
     return out;
 }
 
 static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level)
 {
-
+    Poly sum = PolyFromCoeff(p->abs_term);
+    Poly to_substitute = PolyFromCoeff(1);
+    Poly substitution = (level < count ? x[level] : PolyZero());
+    unsigned to_substitute_exp = 0;
+    for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
+    {
+        Poly pwr = PolyPower(&substitution, ptr->exp - to_substitute_exp);
+        ExecuteBinaryOnPoly(&to_substitute, PolyMul, &pwr);
+        PolyDestroy(&pwr);
+        Poly result = MonoSubstitute(ptr, count, x, level, &to_substitute);
+        ExecuteBinaryOnPoly(&sum, PolyAdd, &result);
+        PolyDestroy(&result);
+    }
+    return sum;
 }
 
 Poly PolyCompose(const Poly *p, unsigned count, const Poly x[])
 {
-    PolySubstitute(p, count, x, 0);
+    return PolySubstitute(p, count, x, 0);
 }
