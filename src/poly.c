@@ -639,8 +639,12 @@ static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsign
 static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level)
 {
     Poly sum = PolyFromCoeff(p->abs_term);
+    if (level >= count)
+    {
+        return sum;
+    }
     Poly to_substitute = PolyFromCoeff(1);
-    Poly substitution = (level < count ? x[level] : PolyZero());
+    Poly substitution = x[level];
     unsigned to_substitute_exp = 0;
     for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
     {
@@ -651,6 +655,8 @@ static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsign
         ExecuteBinaryOnPoly(&sum, PolyAdd, &result);
         PolyDestroy(&result);
     }
+    PolyDestroy(&substitution);
+    PolyDestroy(&to_substitute);
     return sum;
 }
 

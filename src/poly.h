@@ -107,6 +107,7 @@ Poly PolyAddMonos(unsigned count, const Mono monos[]);
 
 /*}@**/
 
+Poly PolyCompose (const Poly *p, unsigned count, const Poly xp[]);
 
 /**@name Konstruktory kopiujące
    @{*/
