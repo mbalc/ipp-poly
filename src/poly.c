@@ -601,3 +601,46 @@ Poly PolyAt(const Poly *p, poly_coeff_t x)
     }
     return out;
 }
+
+static void ExecuteBinaryOnPoly(Poly *p, Poly (*operation)(const Poly *a, const Poly *b), const Poly *arg)
+{
+    Poly buffer = operation(p, arg);
+    PolyDestroy(p);
+    *p = buffer;
+}
+
+static Poly PolyPower(const Poly *p, unsigned exp_left)
+{
+    Poly square = PolyClone(p);
+    Poly out = PolyFromCoeff(1);
+    for (unsigned current_power = 1; current_power <= exp_left; current_power *= 2)
+    {
+        if (exp_left % 2 == 1)
+        {
+            ExecuteBinaryOnPoly(&out, PolyMul, &square);
+        }
+        exp_left /= 2;
+        ExecuteBinaryOnPoly(&square, PolyMul, &square);
+    }
+    PolyDestroy(&square);
+    return out;
+}
+
+static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level);
+
+static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsigned level, const Poly *substitution)
+{
+    Poly out = PolySubstitute(&m->p, count, x, level + 1);
+    ExecuteBinaryOnPoly(&out, PolyMul, substitution);
+    return out;
+}
+
+static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level)
+{
+
+}
+
+Poly PolyCompose(const Poly *p, unsigned count, const Poly x[])
+{
+    PolySubstitute(p, count, x, 0);
+}
