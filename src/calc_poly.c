@@ -203,6 +203,17 @@ static bool ThrowParseDegByArgError()
 }
 
 /**
+ * Zwraca błąd parsowania argumentu polecenia COMPOSE i wypisuje odpowiedni
+ * komunikat.
+ * @return status wykonania dla błędu
+ */
+static bool ThrowParseComposeArgError()
+{
+    fprintf(stderr, "ERROR %d WRONG COUNT\n", global_pcalc_line_number);
+    return true;
+}
+
+/**
  * Wykonuje na stosie wielomianów operację IS_ZERO.
  * Sprawdza, czy wielomian na wierzchołku stosu jest tożsamościowo równy zeru –
  * wypisuje na standardowe wyjście 0 lub 1.
@@ -321,12 +332,12 @@ static void StackTopIsEq()
  * @param operation : operacja do wykonania na stosie
  */
 static void PushBinaryPolyOperationResultOntoStack
-    (Poly (*operation)(const Poly *a, const Poly *b))
+    (Poly (*Operation)(const Poly *a, const Poly *b))
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
     Poly *b = PollStackTop(&global_pcalc_poly_stack);
     Poly *res = PolyMalloc();
-    *res = operation(a, b);
+    *res = Operation(a, b);
     PushOntoStack(res, &global_pcalc_poly_stack);
     PolyDestroy(a);
     free(a);
@@ -378,6 +389,11 @@ static void StackTopAt(poly_coeff_t x)
     PolyDestroy(a);
     free(a);
     PushOntoStack(b, &global_pcalc_poly_stack);
+}
+
+static void StackTopCompose(unsigned count)
+{
+    //NOT IMPLEMENTED YET!
 }
 
 /**
@@ -512,11 +528,11 @@ static bool ParseExp(poly_exp_t *out)
  * @param[in]  procedure        : procedura do wykonania
  * @return                  status wykonania operacji na stosie
  */
-static bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
+static bool ExecuteOnPolyStack(unsigned size_requirement, void (*Procedure)())
 {
     if (global_pcalc_poly_stack.size >= size_requirement)
     {
-        procedure();
+        Procedure();
         return false;
     }
     else
@@ -525,11 +541,30 @@ static bool ExecuteOnPolyStack(unsigned size_requirement, void (*procedure)())
     }
 }
 
+static bool ParseArgument(long *out, long lower_limit, long upper_limit)
+{
+    if (!BufferIsNumber())
+    {
+        return true;
+    }
+    long arg;
+    if (ParseNumber(lower_limit, upper_limit, &arg))
+    {
+        return true;
+    }
+    if (global_pcalc_read_buffer != '\n')
+    {
+        return true;
+    }
+    *out = arg;
+    return false;
+}
+
 /**
  * Parsuje polecenie ze standardowego wejścia oraz wykonuje je.
  * Parser zwraca niezerowy status wykonania, gdy w trakcie jego działania
  * wystąpi błąd.
- * @return             status wykonania parsowania
+ * @return      status wykonania parsowania
  */
 static bool ParseCommand()
 {
@@ -599,16 +634,8 @@ static bool ParseCommand()
         ReadCharacter();
         if (strcmp(command, "AT") == 0)
         {
-            if (!BufferIsNumber())
-            {
-                return ThrowParseAtArgError();
-            }
             poly_coeff_t arg;
-            if (ParseCoeff(&arg))
-            {
-                return ThrowParseAtArgError();
-            }
-            if (global_pcalc_read_buffer != '\n')
+            if (ParseArgument(&arg, LONG_MIN, LONG_MAX))
             {
                 return ThrowParseAtArgError();
             }
@@ -624,16 +651,8 @@ static bool ParseCommand()
         }
         else if (strcmp(command, "DEG_BY") == 0)
         {
-            if (!BufferIsNumber())
-            {
-                return ThrowParseDegByArgError();
-            }
             long arg;
-            if (ParseNumber(0, UINT_MAX,&arg))
-            {
-                return ThrowParseDegByArgError();
-            }
-            if (global_pcalc_read_buffer != '\n')
+            if (ParseArgument(&arg, 0, UINT_MAX))
             {
                 return ThrowParseDegByArgError();
             }
@@ -641,6 +660,24 @@ static bool ParseCommand()
             if (global_pcalc_poly_stack.size >= 1)
             {
                 StackTopDegBy(idx);
+                return false;
+            }
+            else
+            {
+                return ThrowStackUnderflow();
+            }
+        }
+        else if (strcmp(command, "COMPOSE") == 0)
+        {
+            long arg;
+            if (ParseArgument(&arg, 0, INT_MAX))
+            {
+                return ThrowParseComposeArgError();
+            }
+            unsigned count = arg;
+            if (global_pcalc_poly_stack.size >= count)
+            {
+                StackTopCompose(count);
                 return false;
             }
             else
