@@ -19,19 +19,37 @@ set(CMAKE_C_FLAGS "-std=c11 -Wall -Wextra")
 # set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 # set(CMAKE_C_FLAGS_DEBUG "-g")
 
+find_library(CMOCKA cmocka)
+
+if (NOT CMOCKA)
+    message(FATAL_ERROR "Could not find cmocka.")
+endif ()
+
 # Wskazujemy pliki źródłowe.
 set(SOURCE_FILES
+src/calc_poly.c
     src/poly.c
     src/poly.h
 #    src/test_poly.c
     src/stack.c
     src/stack.h
-    src/calc_poly.c
+    src/utils.h
 )
+
+enable_testing()
 
 # Wskazujemy plik wykonywalny.
 # add_executable(test_poly ${SOURCE_FILES})
 add_executable(calc_poly ${SOURCE_FILES})
+add_executable(unit_tests_poly src/unit_tests_poly.c ${SOURCE_FILES})
+set_target_properties(
+    unit_tests_poly
+    PROPERTIES
+    COMPILE_DEFINITIONS UNIT_TESTING=1)
+
+
+target_link_libraries(unit_tests_poly ${CMOCKA})
+add_test(unit_tests_poly ${CMAKE_CURRENT_BINARY_DIR}/unit_tests_poly)
 
 # Dodajemy obsługę Doxygena: sprawdzamy, czy jest zainstalowany i jeśli tak to:
 find_package(Doxygen)

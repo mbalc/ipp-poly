@@ -12,6 +12,7 @@
 #include <assert.h>
 #include "poly.h"
 #include "stack.h"
+#include "utils.h"
 
 
 /** Ostatni wczytany ze standardowego wejścia znak. */
