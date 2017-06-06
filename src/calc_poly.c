@@ -394,8 +394,25 @@ static void StackTopAt(poly_coeff_t x)
 
 static void StackTopCompose(unsigned count)
 {
-    //NOT IMPLEMENTED YET!
+    Poly *a = PollStackTop(&global_pcalc_poly_stack);
+    Poly x[count];
+    for (unsigned i = 0; i < count; ++i)
+    {
+        Poly *t = PollStackTop(&global_pcalc_poly_stack);
+        x[i] = *t;
+        free(t);
+    }
+    Poly *res = PolyMalloc();
+    *res = PolyCompose(a, count, x);
+    PushOntoStack(res, &global_pcalc_poly_stack);
+    PolyDestroy(a);
+    free(a);
+    for (unsigned i = 0; i < count; ++i)
+    {
+        PolyDestroy(&x[i]);
+    }
 }
+
 
 /**
  * Dodaje @p b do @p a.
@@ -676,7 +693,7 @@ static bool ParseCommand()
                 return ThrowParseComposeArgError();
             }
             unsigned count = arg;
-            if (global_pcalc_poly_stack.size >= count)
+            if (global_pcalc_poly_stack.size > count)
             {
                 StackTopCompose(count);
                 return false;

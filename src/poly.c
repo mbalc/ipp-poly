@@ -616,11 +616,11 @@ static Poly PolyPower(const Poly *p, unsigned exp_left)
     Poly out = PolyFromCoeff(1);
     for (unsigned current_power = 1; current_power <= exp_left; current_power *= 2)
     {
-        if (exp_left % 2 == 1)
+        if (exp_left % (2 * current_power) != 0)
         {
             ExecuteBinaryOnPoly(&out, PolyMul, &square);
+            exp_left -= current_power;
         }
-        exp_left /= 2;
         ExecuteBinaryOnPoly(&square, PolyMul, &square);
     }
     PolyDestroy(&square);
@@ -648,14 +648,15 @@ static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsign
     unsigned to_substitute_exp = 0;
     for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
     {
+        assert(ptr->exp - to_substitute_exp > 0);
         Poly pwr = PolyPower(&substitution, ptr->exp - to_substitute_exp);
         ExecuteBinaryOnPoly(&to_substitute, PolyMul, &pwr);
+        to_substitute_exp = ptr->exp;
         PolyDestroy(&pwr);
         Poly result = MonoSubstitute(ptr, count, x, level, &to_substitute);
         ExecuteBinaryOnPoly(&sum, PolyAdd, &result);
         PolyDestroy(&result);
     }
-    PolyDestroy(&substitution);
     PolyDestroy(&to_substitute);
     return sum;
 }
