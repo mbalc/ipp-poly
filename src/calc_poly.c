@@ -570,7 +570,7 @@ static bool ParseArgument(long *out, long lower_limit, long upper_limit)
     {
         return true;
     }
-    if (global_pcalc_read_buffer != '\n')
+    if (!BufferIsEndline(global_pcalc_read_buffer))
     {
         return true;
     }
@@ -688,7 +688,7 @@ static bool ParseCommand()
         else if (strcmp(command, "COMPOSE") == 0)
         {
             long arg;
-            if (ParseArgument(&arg, 0, INT_MAX))
+            if (ParseArgument(&arg, 0, UINT_MAX))
             {
                 return ThrowParseComposeArgError();
             }
@@ -874,6 +874,25 @@ static void ParseLine()
  */
 int main()
 {
+
+
+
+    Poly *cf = malloc(sizeof(Poly));
+    *cf = PolyFromCoeff(1);
+    Mono *mn = malloc(sizeof(Mono));
+    *mn = MonoFromPoly(cf, 1);
+    free(cf);
+
+    Poly poly_arg_1 = PolyAddMonos(1, mn);
+    free(mn);
+    Poly poly_arg_2 = PolyZero();
+    Poly result = PolyCompose(&poly_arg_1, 0, NULL);
+    Poly expected = PolyZero();
+    PolyDestroy(&poly_arg_1);
+    PolyDestroy(&poly_arg_2);
+    PolyDestroy(&result);
+    PolyDestroy(&expected);
+
     //inicjalizacja
     global_pcalc_poly_stack = NewPointerStack();
     global_pcalc_read_buffer = 1;

@@ -654,6 +654,7 @@ static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsign
         ExecuteBinaryOnPoly(&to_substitute, PolyMul, &pwr);
         to_substitute_exp = ptr->exp;
         PolyDestroy(&pwr);
+
         Poly result = MonoSubstitute(ptr, count, x, level, &to_substitute);
         ExecuteBinaryOnPoly(&sum, PolyAdd, &result);
         PolyDestroy(&result);
