@@ -158,9 +158,6 @@ static Poly result;
 
 static Poly expected;
 
-static Poly cf;
-static Mono linear_mono;
-
 
 /**
  * Funkcja wołana przed każdym testem..
@@ -168,9 +165,6 @@ static Mono linear_mono;
 static int pc_test_setup(void **state)
 {
     (void)state;
-
-    cf = PolyFromCoeff(1);
-    linear_mono = MonoFromPoly(&cf, 1);
 
     /* Zwrócenie zera oznacza sukces. */
     return 0;
@@ -191,9 +185,7 @@ static int pc_test_teardown(void **state)
     }
     else
     {
-        assert_true(PolyIsCoeff(&result.first->p));
-        assert_int_equal(result.first->p.abs_term, 1);
-        assert_int_equal(result.first->exp, expected.first->exp);
+        printf("linear on linear only \n");
     }
 
     /* Zwrócenie zera oznacza sukces. */
@@ -255,17 +247,29 @@ static void CoeffPolyCoeffComposeTest(void **state)
 static void LinearPolyNullComposeTest(void **state)
 {
     (void)state;
+    Poly cf;
+    Mono linear_mono;
 
+    cf = PolyFromCoeff(1);
+    linear_mono = MonoFromPoly(&cf, 1);
 
     poly_arg_1 = PolyAddMonos(1, &linear_mono);
     poly_arg_2 = PolyZero();
     result = PolyCompose(&poly_arg_1, 0, NULL);
     expected = PolyZero();
+
+    PolyDestroy(&result);
+    PolyDestroy(&poly_arg_1);
 }
 
 static void LinearPolyCoeffComposeTest(void **state)
 {
     (void)state;
+    Poly cf;
+    Mono linear_mono;
+
+    cf = PolyFromCoeff(1);
+    linear_mono = MonoFromPoly(&cf, 1);
 
     poly_coeff_t coeff = rand();
 
@@ -274,31 +278,39 @@ static void LinearPolyCoeffComposeTest(void **state)
     poly_arg_2 = PolyFromCoeff(coeff);
     result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
     expected = PolyFromCoeff(coeff);
+
+    PolyDestroy(&result);
+    PolyDestroy(&poly_arg_1);
 }
 
 static void LinearPolyLinearComposeTest(void **state)
 {
     (void)state;
+    Poly cf;
+    Mono linear_mono;
+
+    cf = PolyFromCoeff(1);
+    linear_mono = MonoFromPoly(&cf, 1);
 
     poly_arg_1 = PolyAddMonos(1, &linear_mono);
     poly_arg_2 = PolyClone(&poly_arg_1);
     result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
     expected = PolyAddMonos(1, &linear_mono);
 
+    assert_true(PolyIsCoeff(&result.first->p));
+    assert_int_equal(result.first->p.abs_term, 1);
+    assert_int_equal(result.first->exp, expected.first->exp);
 
-    assert_int_equal(result.abs_term, expected.abs_term);
-    if (expected.first == NULL)
-    {
-        assert_int_equal(result.first, NULL);
-        assert_int_equal(result.last, NULL);
-    }
-    else
-    {
-        assert_int_equal(result.first->exp, expected.first->exp);
-        assert_true(PolyIsCoeff(&result.first->p));
-        assert_int_equal(result.first->p.abs_term, 1);
-    }
+    PolyDestroy(&result);
+    PolyDestroy(&expected);
+    PolyDestroy(&poly_arg_1);
+    PolyDestroy(&poly_arg_2);
 }
+
+
+
+
+
 
 static void init_input_stream(const char *str)
 {
@@ -443,7 +455,7 @@ int main(void)
 
     bool status = 0;
 
-    // status |= cmocka_run_group_tests(poly_compose_tests, NULL, NULL);
+    status |= cmocka_run_group_tests(poly_compose_tests, NULL, NULL);
     status |= cmocka_run_group_tests(count_calc_tests, NULL, NULL);
 
     return status;
