@@ -139,18 +139,61 @@ int mock_ungetc(int c, FILE *stream)
     }
 }
 
+Poly poly_arg_1;
+Poly poly_arg_2;
+Poly result;
 
-static void ZeroPolyZeroComposeTest(void **state)
+Poly expected;
+
+/**
+ * Funkcja wołana przed każdym testem..
+ */
+static int pc_test_setup(void **state)
 {
     (void)state;
 
-    Poly zero_poly = PolyZero();
-    Poly result = PolyCompose(&zero_poly, 0, NULL);
+    /* Zwrócenie zera oznacza sukces. */
+    return 0;
+}
 
-    assert_int_equal(result.abs_term, zero_poly.abs_term);
-    assert_int_equal(result.abs_term, 0);
-    assert_int_equal(result.first, NULL);
-    assert_int_equal(result.last, NULL);
+/**
+ * Funkcja wołana po każdym teście.
+ */
+static int pc_test_teardown(void **state)
+{
+    (void)state;
+
+    assert_int_equal(result.abs_term, expected.abs_term);
+    if (expected.first == NULL)
+    {
+        assert_int_equal(result.first, NULL);
+        assert_int_equal(result.last, NULL);
+    }
+    else
+    {
+        assert_int_equal(result.first->exp, expected.first->exp);
+        assert_true(PolyIsCoeff(&result.first->p));
+        assert_int_equal(result.first->p.abs_term, 1);
+    }
+
+    PolyDestroy(&poly_arg_1);
+    PolyDestroy(&poly_arg_2);
+    PolyDestroy(&result);
+    PolyDestroy(&expected);
+
+    /* Zwrócenie zera oznacza sukces. */
+    return 0;
+}
+
+
+static void ZeroPolyNullComposeTest(void **state)
+{
+    (void)state;
+
+    poly_arg_1 = PolyZero();
+    poly_arg_2 = PolyZero();
+    result = PolyCompose(&poly_arg_1, 0, NULL);
+    expected = PolyZero();
 }
 
 static void ZeroPolyCoeffComposeTest(void **state)
@@ -159,29 +202,22 @@ static void ZeroPolyCoeffComposeTest(void **state)
 
     poly_coeff_t coeff = rand();
 
-    Poly zero_poly = PolyZero();
-    Poly arg = PolyFromCoeff(coeff);
-    Poly result = PolyCompose(&zero_poly, 1, &arg);
-
-    assert_int_equal(result.abs_term, zero_poly.abs_term);
-    assert_int_equal(result.abs_term, 0);
-    assert_int_equal(result.first, NULL);
-    assert_int_equal(result.last, NULL);
+    poly_arg_1 = PolyZero();
+    poly_arg_2 = PolyFromCoeff(coeff);
+    result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
+    expected = PolyZero();
 }
 
-static void CoeffPolyZeroComposeTest(void **state)
+static void CoeffPolyNullComposeTest(void **state)
 {
     (void)state;
 
     poly_coeff_t coeff = rand();
 
-    Poly coeff_poly = PolyFromCoeff(coeff);
-    Poly result = PolyCompose(&coeff_poly, 0, NULL);
-
-    assert_int_equal(result.abs_term, coeff_poly.abs_term);
-    assert_int_equal(result.abs_term, coeff);
-    assert_int_equal(result.first, NULL);
-    assert_int_equal(result.last, NULL);
+    poly_arg_1 = PolyFromCoeff(coeff);
+    poly_arg_2 = PolyZero();
+    result = PolyCompose(&poly_arg_1, 0, NULL);
+    expected = PolyFromCoeff(coeff);
 }
 
 static void CoeffPolyCoeffComposeTest(void **state)
@@ -189,26 +225,75 @@ static void CoeffPolyCoeffComposeTest(void **state)
     (void)state;
 
     poly_coeff_t coeff_1 = rand();
-    poly_coeff_t coeff_2 = rand();
+    poly_coeff_t coeff_2;
+    do
+    {
+        coeff_2 = rand();
+    } while (coeff_2 == coeff_1);
 
-    Poly coeff_poly_1 = PolyFromCoeff(coeff_1);
-    Poly coeff_poly_2 = PolyFromCoeff(coeff_2);
-    Poly result = PolyCompose(&coeff_poly_1, 1, &coeff_poly_2);
+    poly_arg_1 = PolyFromCoeff(coeff_1);
+    poly_arg_2 = PolyFromCoeff(coeff_2);
+    result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
+    expected = PolyFromCoeff(coeff_1);
+}
 
-    assert_int_equal(result.abs_term, coeff_poly_1.abs_term);
-    assert_int_equal(result.abs_term, coeff_1);
-    assert_int_equal(result.first, NULL);
-    assert_int_equal(result.last, NULL);
+static void LinearPolyNullComposeTest(void **state)
+{
+    (void)state;
+
+    Poly *cf = malloc(sizeof(Poly));
+    *cf = PolyFromCoeff(1);
+    Mono *mn = malloc(sizeof(Mono));
+    *mn = MonoFromPoly(cf, 1);
+
+    poly_arg_1 = PolyAddMonos(1, mn);
+    poly_arg_2 = PolyZero();
+    result = PolyCompose(&poly_arg_1, 0, NULL);
+    expected = PolyZero();
+}
+
+static void LinearPolyCoeffComposeTest(void **state)
+{
+    (void)state;
+
+    Poly *cf = malloc(sizeof(Poly));
+    *cf = PolyFromCoeff(1);
+    Mono *mn = malloc(sizeof(Mono));
+    *mn = MonoFromPoly(cf, 1);
+    poly_coeff_t coeff = rand();
+
+    poly_arg_1 = PolyAddMonos(1, mn);
+    poly_arg_2 = PolyFromCoeff(coeff);
+    result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
+    expected = PolyFromCoeff(coeff);
+}
+
+static void LinearPolyLinearComposeTest(void **state)
+{
+    (void)state;
+
+    Poly *cf = malloc(sizeof(Poly));
+    *cf = PolyFromCoeff(1);
+    Mono *mn = malloc(sizeof(Mono));
+    *mn = MonoFromPoly(cf, 1);
+
+    poly_arg_1 = PolyAddMonos(1, mn);
+    poly_arg_2 = PolyClone(&poly_arg_1);
+    result = PolyCompose(&poly_arg_1, 1, &poly_arg_2);
+    expected = PolyClone(&poly_arg_1);
 }
 
 int main(void)
 {
     srand(time(NULL));
     const struct CMUnitTest poly_compose_tests[] = {
-        cmocka_unit_test(ZeroPolyZeroComposeTest),
-        cmocka_unit_test(ZeroPolyCoeffComposeTest),
-        cmocka_unit_test(CoeffPolyZeroComposeTest),
-        cmocka_unit_test(CoeffPolyCoeffComposeTest),
+        cmocka_unit_test_setup_teardown(ZeroPolyNullComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(ZeroPolyCoeffComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(CoeffPolyNullComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(CoeffPolyCoeffComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(LinearPolyNullComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(LinearPolyCoeffComposeTest, pc_test_setup, pc_test_teardown),
+        cmocka_unit_test_setup_teardown(LinearPolyLinearComposeTest, pc_test_setup, pc_test_teardown),
     };
     return cmocka_run_group_tests(poly_compose_tests, NULL, NULL);
 }

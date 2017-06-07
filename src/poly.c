@@ -11,6 +11,7 @@
 #include <string.h>
 #include <assert.h>
 #include "poly.h"
+#include "utils.h"
 
 
 /**
