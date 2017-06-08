@@ -330,7 +330,7 @@ static void StackTopIsEq()
 /**
  * Wykonuje na dwóch pierwszych elementach stosu daną operację i umieszcza jej
  * wynik na stosie.
- * @param operation : operacja do wykonania na stosie
+ * @param Operation : operacja do wykonania na stosie
  */
 static void PushBinaryPolyOperationResultOntoStack
     (Poly (*Operation)(const Poly *a, const Poly *b))
@@ -392,6 +392,14 @@ static void StackTopAt(poly_coeff_t x)
     PushOntoStack(b, &global_pcalc_poly_stack);
 }
 
+/**
+ * Składa kolejne @p count wielomianów z wielomianem na wierzchu stosu.
+ * Dla wartości parametru @p count podstawia do kolejnych zmiennych wielomianu na
+ * stosie kolejne wielomiany ze stosu: za @p i -tą zmienną wielomianu z wierzchu
+ * stosu podstawia @p i+1 - wszy wielomian ze względu na głębokość w stosie. Po
+ * podstawieniu umieszcza wynik operacji na wierzchu stosu kalkulatora.
+ * @param[in] count : liczba wielomianów do podstawienia
+ */
 static void StackTopCompose(unsigned count)
 {
     Poly *a = PollStackTop(&global_pcalc_poly_stack);
@@ -543,7 +551,7 @@ static bool ParseExp(poly_exp_t *out)
  * Wykonuje daną operację jedynie, gdy na stosie jest wystarczająca liczba elementów.
  * W przeciwnym wypadku zwraca błąd i wypisuje komunikat.
  * @param[in]  size_requirement : wymagana liczba elementów na stosie
- * @param[in]  procedure        : procedura do wykonania
+ * @param[in]  Procedure        : procedura do wykonania
  * @return                  status wykonania operacji na stosie
  */
 static bool ExecuteOnPolyStack(unsigned size_requirement, void (*Procedure)())
@@ -559,6 +567,13 @@ static bool ExecuteOnPolyStack(unsigned size_requirement, void (*Procedure)())
     }
 }
 
+/**
+ * Parsuje argument dla poleceń kalkulatora zawierających argument.
+ * @param[out]  out         : wyjście parsera
+ * @param[in]   lower_limit : dolny zakres liczby do wczytania
+ * @param[in]   upper_limit : górny zakres liczby do wczytania
+ * @return      status wykonania parsowania
+ */
 static bool ParseArgument(long *out, long lower_limit, long upper_limit)
 {
     if (!BufferIsNumber())
@@ -874,25 +889,6 @@ static void ParseLine()
  */
 int main()
 {
-
-
-
-    Poly *cf = malloc(sizeof(Poly));
-    *cf = PolyFromCoeff(1);
-    Mono *mn = malloc(sizeof(Mono));
-    *mn = MonoFromPoly(cf, 1);
-    free(cf);
-
-    Poly poly_arg_1 = PolyAddMonos(1, mn);
-    free(mn);
-    Poly poly_arg_2 = PolyZero();
-    Poly result = PolyCompose(&poly_arg_1, 0, NULL);
-    Poly expected = PolyZero();
-    PolyDestroy(&poly_arg_1);
-    PolyDestroy(&poly_arg_2);
-    PolyDestroy(&result);
-    PolyDestroy(&expected);
-
     //inicjalizacja
     global_pcalc_poly_stack = NewPointerStack();
     global_pcalc_read_buffer = 1;

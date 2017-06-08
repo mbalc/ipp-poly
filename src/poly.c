@@ -603,6 +603,13 @@ Poly PolyAt(const Poly *p, poly_coeff_t x)
     return out;
 }
 
+/**
+ * Wykonuje dwuargumentową operację i jej wynik zapisuje w pierwszym z wielomianów.
+ * Celem tej implementacji jest odzwierciedlenie działania operatorów takich jak np. '+='.
+ * @param[in,out] p         : wielomian na którym wykonamy operację
+ * @param[in]     operation : operacja do wykonania
+ * @param[in]     arg       : argument operacji
+ */
 static void ExecuteBinaryOnPoly(Poly *p, Poly (*operation)(const Poly *a, const Poly *b), const Poly *arg)
 {
     Poly buffer = operation(p, arg);
@@ -610,7 +617,12 @@ static void ExecuteBinaryOnPoly(Poly *p, Poly (*operation)(const Poly *a, const 
     *p = buffer;
 }
 
-
+/**
+ * Zwraca wielomian @p p podniesiony do @p exp_left -tej potęgi
+ * @param[in]  p        : wielomian do spotęgowania
+ * @param[in]  exp_left : potęga, do której podniesiemy wielomian @p p
+ * @return          @f$ p ^ \verb|exp_left| @f$
+ */
 static Poly PolyPower(const Poly *p, unsigned exp_left)
 {
     Poly square = PolyClone(p);
@@ -630,6 +642,16 @@ static Poly PolyPower(const Poly *p, unsigned exp_left)
 
 static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level);
 
+/**
+ * Podstawia wielomiany pod dany jednomian zgodne z opisem PolyCompose, gdy
+ * jest on zależny od zmiennej o numerze @p count.
+ * @param[in]  m     : jednomian, pod którego zmienne podstawimy wielomiany
+ * @param[in]  count : liczba wielomianów do podstawienia pod zmienne @p p
+ * @param[in]  x     : tablica wielomianów do podstawienia pod zmienne @p p
+ * @param[in]  level : numer zmiennej od której zależą jednomiany @p p
+ * @param[in]  to_substitute : wielomian do podstawienia za zmienną jednomianu @p m
+ * @return     wielomian otrzymany w wyniku wykonania operacji podstawiania opisanej w PolyCompose
+ */
 static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsigned level, const Poly *to_substitute)
 {
     Poly out = PolySubstitute(&m->p, count, x, level + 1);
@@ -637,6 +659,15 @@ static Poly MonoSubstitute(const Mono *m, unsigned count, const Poly x[], unsign
     return out;
 }
 
+/**
+ * Podstawia wielomiany pod dany wielomian zgodne z opisem PolyCompose, gdy
+ * jednomiany danego wielomianu są zależne od zmiennej o numerze @p count.
+ * @param[in]  p     : wielomian, pod którego zmienne podstawimy wielomiany
+ * @param[in]  count : liczba wielomianów do podstawienia pod zmienne @p p
+ * @param[in]  x     : tablica wielomianów do podstawienia pod zmienne @p p
+ * @param[in]  level : numer zmiennej od której zależą jednomiany @p p
+ * @return       wielomian @p p po wykonaniu operacji podstawiania opisanej w PolyCompose
+ */
 static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsigned level)
 {
     Poly sum = PolyFromCoeff(p->abs_term);

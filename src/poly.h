@@ -107,7 +107,6 @@ Poly PolyAddMonos(unsigned count, const Mono monos[]);
 
 /*}@**/
 
-Poly PolyCompose (const Poly *p, unsigned count, const Poly xp[]);
 
 /**@name Konstruktory kopiujące
    @{*/
@@ -268,6 +267,23 @@ poly_exp_t PolyDeg(const Poly *p);
  * @return @f$p(x, x_0, x_1, \ldots)@f$
  */
 Poly PolyAt(const Poly *p, poly_coeff_t x);
+
+/**
+ * Podstawia wielomiany pod kolejne zmienne danego wielomianu.
+ * Funkcja PolyCompose zwraca wielomian @p p, w którym pod zmienną
+ * @f$x_i@f$ podstawiamy wielomian @f$x[i]@f$. Jeśli @f$count < k + 1@f$, to
+ * @f$x_i = 0@f$ dla @f$i = count, ..., k@f$, czyli brakujące wartości zmiennych
+ * wypełniamy zerami. Jeśli @p count jest równe zeru, to funkcja zwraca
+ * po prostu wielomian stały będący wartością wielomianu @p p w „zerze”.
+ * Jeżeli największy indeks zmiennej występujący w jednomianach o wykładniku
+ * większym od zera danego wielomianu wynosi @p k, to liczba zmiennych tego
+ * wielomianu wynosi @p k+1 (bo zmienne indeksujemy od 0).
+ * @param[in]  p     : wielomian, pod którego zmienne podstawimy wielomiany
+ * @param[in]  count : liczba wielomianów do podstawienia pod zmienne @p p
+ * @param[in]  xp    : tablica wielomianów do podstawienia pod zmienne @p p
+ * @return       wielomian @p p po wykonaniu opisanej wyżej operacji podstawiania
+ */
+Poly PolyCompose (const Poly *p, unsigned count, const Poly xp[]);
 
 /*}@**/
 
