@@ -680,7 +680,7 @@ static Poly PolySubstitute(const Poly *p, unsigned count, const Poly x[], unsign
     unsigned to_substitute_exp = 0;
     for (Mono *ptr = p->last; ptr != NULL; ptr = ptr->prev)
     {
-        assert(ptr->exp - to_substitute_exp > 0);
+        assert((int)ptr->exp - (int)to_substitute_exp >= 0);
         Poly pwr = PolyPower(&substitution, ptr->exp - to_substitute_exp);
         ExecuteBinaryOnPoly(&to_substitute, PolyMul, &pwr);
         to_substitute_exp = ptr->exp;
