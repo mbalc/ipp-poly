@@ -657,12 +657,24 @@ static bool ParseCommand()
         {
             return ExecuteOnPolyStack(2, StackTopSub);
         }
+        else if (strcmp(command, "AT") == 0) //polecenia wymagają argumentu
+        {
+            return ThrowParseAtArgError();
+        }
+        else if (strcmp(command, "DEG_BY") == 0)
+        {
+            return ThrowParseDegByArgError();
+        }
+        else if (strcmp(command, "COMPOSE") == 0)
+        {
+            return ThrowParseComposeArgError();
+        }
         else
         {
             return ThrowParseCommandError();
         }
     }
-    if (global_pcalc_read_buffer == ' ')
+    else if (global_pcalc_read_buffer == ' ')
     {
         ReadCharacter();
         if (strcmp(command, "AT") == 0)
