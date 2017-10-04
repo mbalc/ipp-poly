@@ -1,6 +1,6 @@
 # ipp-poly
 
-The following text is cited from a README prepared by Piotr Styczyński to his implementation of that task, and is an effect of his sole effort. Thanks for sharing this translation and explanation!
+The following text is cited from a README prepared by [Piotr Styczyński](https://github.com/styczynski "His GitHub") to his implementation of that task, and is an effect of his sole effort. Thanks for sharing this translation and explanation!
 
 
 # Exercise
